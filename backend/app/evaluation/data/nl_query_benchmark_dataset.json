@@ -1,0 +1,560 @@
+[
+  {
+    "id": "aggregate_yield_by_variety_hu",
+    "question": "Mi az atlagos yield fajtankent?",
+    "expected_supported": true,
+    "expected_intent_type": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {
+      "variable": "yield",
+      "group_by": "variety",
+      "metric": "avg_normalized_value",
+      "include_invalid": false,
+      "filters": {
+        "variable": "yield",
+        "normalized_unit": "kg/ha"
+      }
+    },
+    "expected_result": {
+      "count": 2,
+      "aggregation_items": [
+        {
+          "group_value": "Apex",
+          "metric_value": 13500.0,
+          "record_count": 2,
+          "normalized_unit": "kg/ha"
+        },
+        {
+          "group_value": "Nova",
+          "metric_value": 11000.0,
+          "record_count": 1,
+          "normalized_unit": "kg/ha"
+        }
+      ]
+    },
+    "notes": "Magyar aggregate baseline."
+  },
+  {
+    "id": "aggregate_yield_by_variety_en",
+    "question": "What is the average yield by variety?",
+    "expected_supported": true,
+    "expected_intent_type": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {
+      "variable": "yield",
+      "group_by": "variety",
+      "metric": "avg_normalized_value",
+      "include_invalid": false,
+      "filters": {
+        "variable": "yield",
+        "normalized_unit": "kg/ha"
+      }
+    },
+    "expected_result": {
+      "count": 2,
+      "aggregation_items": [
+        {
+          "group_value": "Apex",
+          "metric_value": 13500.0,
+          "record_count": 2,
+          "normalized_unit": "kg/ha"
+        },
+        {
+          "group_value": "Nova",
+          "metric_value": 11000.0,
+          "record_count": 1,
+          "normalized_unit": "kg/ha"
+        }
+      ]
+    }
+  },
+  {
+    "id": "aggregate_yield_by_treatment_hu",
+    "question": "Mi az atlagos yield kezelesenkent?",
+    "expected_supported": true,
+    "expected_intent_type": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {
+      "variable": "yield",
+      "group_by": "treatment",
+      "metric": "avg_normalized_value",
+      "include_invalid": false,
+      "filters": {
+        "variable": "yield",
+        "normalized_unit": "kg/ha"
+      }
+    },
+    "expected_result": {
+      "count": 2,
+      "aggregation_items": [
+        {
+          "group_value": "control",
+          "metric_value": 12000.0,
+          "record_count": 1,
+          "normalized_unit": "kg/ha"
+        },
+        {
+          "group_value": "treated",
+          "metric_value": 13000.0,
+          "record_count": 2,
+          "normalized_unit": "kg/ha"
+        }
+      ]
+    }
+  },
+  {
+    "id": "aggregate_yield_by_treatment_en",
+    "question": "Average yield by treatment",
+    "expected_supported": true,
+    "expected_intent_type": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {
+      "variable": "yield",
+      "group_by": "treatment",
+      "metric": "avg_normalized_value",
+      "include_invalid": false,
+      "filters": {
+        "variable": "yield",
+        "normalized_unit": "kg/ha"
+      }
+    },
+    "expected_result": {
+      "count": 2,
+      "aggregation_items": [
+        {
+          "group_value": "control",
+          "metric_value": 12000.0,
+          "record_count": 1,
+          "normalized_unit": "kg/ha"
+        },
+        {
+          "group_value": "treated",
+          "metric_value": 13000.0,
+          "record_count": 2,
+          "normalized_unit": "kg/ha"
+        }
+      ]
+    }
+  },
+  {
+    "id": "aggregate_yield_by_location_hu",
+    "question": "Mi az atlagos yield helyszinenkent?",
+    "expected_supported": true,
+    "expected_intent_type": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {
+      "variable": "yield",
+      "group_by": "location",
+      "metric": "avg_normalized_value",
+      "include_invalid": false,
+      "filters": {
+        "variable": "yield",
+        "normalized_unit": "kg/ha"
+      }
+    },
+    "expected_result": {
+      "count": 2,
+      "aggregation_items": [
+        {
+          "group_value": "north",
+          "metric_value": 13500.0,
+          "record_count": 2,
+          "normalized_unit": "kg/ha"
+        },
+        {
+          "group_value": "south",
+          "metric_value": 11000.0,
+          "record_count": 1,
+          "normalized_unit": "kg/ha"
+        }
+      ]
+    }
+  },
+  {
+    "id": "aggregate_yield_by_location_en",
+    "question": "Average yield by location",
+    "expected_supported": true,
+    "expected_intent_type": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {
+      "variable": "yield",
+      "group_by": "location",
+      "metric": "avg_normalized_value",
+      "include_invalid": false,
+      "filters": {
+        "variable": "yield",
+        "normalized_unit": "kg/ha"
+      }
+    },
+    "expected_result": {
+      "count": 2,
+      "aggregation_items": [
+        {
+          "group_value": "north",
+          "metric_value": 13500.0,
+          "record_count": 2,
+          "normalized_unit": "kg/ha"
+        },
+        {
+          "group_value": "south",
+          "metric_value": 11000.0,
+          "record_count": 1,
+          "normalized_unit": "kg/ha"
+        }
+      ]
+    }
+  },
+  {
+    "id": "top_group_variety_en",
+    "question": "Which variety has the highest average yield?",
+    "expected_supported": true,
+    "expected_intent_type": "top_group",
+    "expected_result_type": "top_group",
+    "expected_query_plan": {
+      "variable": "yield",
+      "group_by": "variety",
+      "metric": "avg_normalized_value",
+      "include_invalid": false,
+      "filters": {
+        "variable": "yield",
+        "normalized_unit": "kg/ha"
+      }
+    },
+    "expected_result": {
+      "count": 2,
+      "top_group": {
+        "group_value": "Apex",
+        "metric_value": 13500.0,
+        "record_count": 2,
+        "normalized_unit": "kg/ha"
+      }
+    }
+  },
+  {
+    "id": "top_group_treatment_hu",
+    "question": "Melyik treatment mellett a legnagyobb az atlagos yield?",
+    "expected_supported": true,
+    "expected_intent_type": "top_group",
+    "expected_result_type": "top_group",
+    "expected_query_plan": {
+      "variable": "yield",
+      "group_by": "treatment",
+      "metric": "avg_normalized_value",
+      "include_invalid": false,
+      "filters": {
+        "variable": "yield",
+        "normalized_unit": "kg/ha"
+      }
+    },
+    "expected_result": {
+      "count": 2,
+      "top_group": {
+        "group_value": "treated",
+        "metric_value": 13000.0,
+        "record_count": 2,
+        "normalized_unit": "kg/ha"
+      }
+    }
+  },
+  {
+    "id": "top_group_location_en",
+    "question": "Which location has the highest average yield?",
+    "expected_supported": true,
+    "expected_intent_type": "top_group",
+    "expected_result_type": "top_group",
+    "expected_query_plan": {
+      "variable": "yield",
+      "group_by": "location",
+      "metric": "avg_normalized_value",
+      "include_invalid": false,
+      "filters": {
+        "variable": "yield",
+        "normalized_unit": "kg/ha"
+      }
+    },
+    "expected_result": {
+      "count": 2,
+      "top_group": {
+        "group_value": "north",
+        "metric_value": 13500.0,
+        "record_count": 2,
+        "normalized_unit": "kg/ha"
+      }
+    }
+  },
+  {
+    "id": "list_warning_and_invalid_hu",
+    "question": "Mutasd a warning es invalid rekordokat.",
+    "expected_supported": true,
+    "expected_intent_type": "list_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {
+      "include_invalid": true,
+      "filters": {
+        "validation_statuses": ["warning", "invalid"]
+      }
+    },
+    "expected_result": {
+      "count": 2,
+      "record_keys": [
+        "u1|FieldData|3|yield_t/ha",
+        "u1|FieldData|4|yield_kg_ha"
+      ]
+    }
+  },
+  {
+    "id": "list_invalid_only_hu",
+    "question": "Mutasd az invalid rekordokat.",
+    "expected_supported": true,
+    "expected_intent_type": "list_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {
+      "include_invalid": true,
+      "filters": {
+        "validation_status": "invalid"
+      }
+    },
+    "expected_result": {
+      "count": 1,
+      "record_keys": [
+        "u1|FieldData|4|yield_kg_ha"
+      ]
+    }
+  },
+  {
+    "id": "list_warning_only_en",
+    "question": "Show warning records.",
+    "expected_supported": true,
+    "expected_intent_type": "list_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {
+      "include_invalid": false,
+      "filters": {
+        "validation_status": "warning"
+      }
+    },
+    "expected_result": {
+      "count": 1,
+      "record_keys": [
+        "u1|FieldData|3|yield_t/ha"
+      ]
+    }
+  },
+  {
+    "id": "list_location_north_en",
+    "question": "What records are available for North location?",
+    "expected_supported": true,
+    "expected_intent_type": "list_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {
+      "include_invalid": false,
+      "filters": {
+        "location": "north"
+      }
+    },
+    "expected_result": {
+      "count": 4,
+      "record_keys": [
+        "u1|FieldData|2|yield_t/ha",
+        "u1|FieldData|3|yield_t/ha",
+        "u3|MoistureData|2|moisture_pct",
+        "u4|HeightData|2|plant_height_cm"
+      ]
+    }
+  },
+  {
+    "id": "list_location_south_en",
+    "question": "What records are available for South location?",
+    "expected_supported": true,
+    "expected_intent_type": "list_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {
+      "include_invalid": false,
+      "filters": {
+        "location": "south"
+      }
+    },
+    "expected_result": {
+      "count": 2,
+      "record_keys": [
+        "u1|FieldData|4|yield_kg_ha",
+        "u2|FieldData|2|yield_kg_ha"
+      ]
+    }
+  },
+  {
+    "id": "list_variety_apex_en",
+    "question": "Show records for Apex variety.",
+    "expected_supported": true,
+    "expected_intent_type": "list_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {
+      "include_invalid": false,
+      "filters": {
+        "variety": "Apex"
+      }
+    },
+    "expected_result": {
+      "count": 2,
+      "record_keys": [
+        "u1|FieldData|2|yield_t/ha",
+        "u1|FieldData|3|yield_t/ha"
+      ]
+    }
+  },
+  {
+    "id": "list_variety_nova_hu",
+    "question": "Milyen rekordok vannak Nova fajtara?",
+    "expected_supported": true,
+    "expected_intent_type": "list_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {
+      "include_invalid": false,
+      "filters": {
+        "variety": "Nova"
+      }
+    },
+    "expected_result": {
+      "count": 2,
+      "record_keys": [
+        "u1|FieldData|4|yield_kg_ha",
+        "u2|FieldData|2|yield_kg_ha"
+      ]
+    }
+  },
+  {
+    "id": "list_variable_yield_en",
+    "question": "Show yield records.",
+    "expected_supported": true,
+    "expected_intent_type": "list_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {
+      "include_invalid": false,
+      "filters": {
+        "variable": "yield",
+        "normalized_unit": "kg/ha"
+      }
+    },
+    "expected_result": {
+      "count": 4,
+      "record_keys": [
+        "u1|FieldData|2|yield_t/ha",
+        "u1|FieldData|3|yield_t/ha",
+        "u1|FieldData|4|yield_kg_ha",
+        "u2|FieldData|2|yield_kg_ha"
+      ]
+    }
+  },
+  {
+    "id": "list_variable_moisture_en",
+    "question": "Show moisture records.",
+    "expected_supported": true,
+    "expected_intent_type": "list_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {
+      "include_invalid": false,
+      "filters": {
+        "variable": "moisture",
+        "normalized_unit": "%"
+      }
+    },
+    "expected_result": {
+      "count": 1,
+      "record_keys": [
+        "u3|MoistureData|2|moisture_pct"
+      ]
+    }
+  },
+  {
+    "id": "list_variable_plant_height_hu",
+    "question": "Milyen rekordok vannak novenymagassagra?",
+    "expected_supported": true,
+    "expected_intent_type": "list_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {
+      "include_invalid": false,
+      "filters": {
+        "variable": "plant_height",
+        "normalized_unit": "cm"
+      }
+    },
+    "expected_result": {
+      "count": 1,
+      "record_keys": [
+        "u4|HeightData|2|plant_height_cm"
+      ]
+    }
+  },
+  {
+    "id": "list_yield_for_north_location_en",
+    "question": "Show yield records for North location.",
+    "expected_supported": true,
+    "expected_intent_type": "list_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {
+      "include_invalid": false,
+      "filters": {
+        "variable": "yield",
+        "location": "north",
+        "normalized_unit": "kg/ha"
+      }
+    },
+    "expected_result": {
+      "count": 2,
+      "record_keys": [
+        "u1|FieldData|2|yield_t/ha",
+        "u1|FieldData|3|yield_t/ha"
+      ]
+    }
+  },
+  {
+    "id": "unsupported_chart_request_hu",
+    "question": "Rajzolj diagramot a teljes trendrol.",
+    "expected_supported": false,
+    "expected_intent_type": "unsupported",
+    "expected_result_type": "unsupported",
+    "expected_result": {
+      "count": 0
+    }
+  },
+  {
+    "id": "unsupported_regression_request_hu",
+    "question": "Keszits regressziot a teljes adathalmazra.",
+    "expected_supported": false,
+    "expected_intent_type": "unsupported",
+    "expected_result_type": "unsupported",
+    "expected_result": {
+      "count": 0
+    }
+  },
+  {
+    "id": "unsupported_forecast_request_hu",
+    "question": "Adj idosoros elorejelzest.",
+    "expected_supported": false,
+    "expected_intent_type": "unsupported",
+    "expected_result_type": "unsupported",
+    "expected_result": {
+      "count": 0
+    }
+  },
+  {
+    "id": "unsupported_trend_request_hu",
+    "question": "Mi a trend 2026-ban?",
+    "expected_supported": false,
+    "expected_intent_type": "unsupported",
+    "expected_result_type": "unsupported",
+    "expected_result": {
+      "count": 0
+    }
+  },
+  {
+    "id": "unsupported_median_request_hu",
+    "question": "Szamolj median erteket.",
+    "expected_supported": false,
+    "expected_intent_type": "unsupported",
+    "expected_result_type": "unsupported",
+    "expected_result": {
+      "count": 0
+    }
+  }
+]

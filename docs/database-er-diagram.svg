@@ -1,0 +1,150 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1260" viewBox="0 0 1800 1260" role="img" aria-labelledby="title desc">
+  <title id="title">Adatbazis-reteg es ER-diagram</title>
+  <desc id="desc">A szakdolgozati demonstrator adatbazisretegei: raw, staging, harmonized, safe es ops.</desc>
+  <defs>
+    <style>
+      text { font-family: "DejaVu Sans", "Segoe UI", Arial, sans-serif; fill: #16212b; }
+      .title { font-size: 30px; font-weight: 700; }
+      .subtitle { font-size: 16px; fill: #44515c; }
+      .schema { font-size: 14px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+      .entity-title { font-size: 20px; font-weight: 700; }
+      .meta { font-size: 13px; fill: #5a6670; }
+      .field { font-size: 14px; }
+      .pk { font-weight: 700; }
+      .note-title { font-size: 18px; font-weight: 700; }
+      .note { font-size: 14px; fill: #34424d; }
+      .box { fill: #ffffff; stroke: #20303d; stroke-width: 2; rx: 18; ry: 18; }
+      .header-raw { fill: #dff3ff; }
+      .header-staging { fill: #fff0cf; }
+      .header-harmonized { fill: #dff6e6; }
+      .header-safe { fill: #e8ecff; }
+      .header-ops { fill: #f5e3ff; }
+      .divider { stroke: #d3dbe2; stroke-width: 1; }
+      .rel { stroke: #2d4757; stroke-width: 3; fill: none; }
+      .rel-dashed { stroke: #2d4757; stroke-width: 3; stroke-dasharray: 10 8; fill: none; }
+      .legend { fill: #f7fafc; stroke: #d5dde5; stroke-width: 1.5; rx: 14; ry: 14; }
+      .badge { font-size: 12px; font-weight: 700; fill: #ffffff; }
+      .small { font-size: 12px; fill: #5a6670; }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M 0 0 L 12 6 L 0 12 z" fill="#2d4757"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1800" height="1260" fill="#f3f7fa"/>
+
+  <text x="90" y="70" class="title">Adatbazis-reteg es ER-diagram</text>
+  <text x="90" y="102" class="subtitle">A diagram a projekt SQL migracioi alapjan keszult. A logikai retegek a nyers beolvasastol a lekerdezheto, vedett olvasasi retegig kovetik az adat utjat.</text>
+
+  <rect x="1220" y="48" width="490" height="92" class="legend"/>
+  <text x="1250" y="82" class="note-title">Jelolesek</text>
+  <text x="1250" y="108" class="note">PK = primer kulcs, FK = kulso kulcs, szaggatott nyil = nezet forrasa, kulon schema = eltero adattarhazi szerep</text>
+
+  <rect x="90" y="170" width="520" height="310" class="box"/>
+  <rect x="90" y="170" width="520" height="64" class="header-raw"/>
+  <text x="120" y="200" class="schema">raw schema</text>
+  <text x="120" y="226" class="entity-title">raw.artifacts</text>
+  <text x="455" y="226" class="meta">eredeti feltoltott fajl</text>
+  <line x1="110" y1="246" x2="590" y2="246" class="divider"/>
+  <text x="120" y="278" class="field pk">PK id : uuid</text>
+  <text x="120" y="304" class="field">original_filename : text</text>
+  <text x="120" y="330" class="field">mime_type : text</text>
+  <text x="120" y="356" class="field">file_size_bytes : bigint</text>
+  <text x="120" y="382" class="field">file_hash_sha256 : text</text>
+  <text x="120" y="408" class="field">uploaded_at : timestamptz</text>
+  <text x="120" y="434" class="field">parser_version : text</text>
+  <text x="120" y="460" class="field">raw_content : bytea</text>
+
+  <rect x="720" y="170" width="540" height="340" class="box"/>
+  <rect x="720" y="170" width="540" height="64" class="header-raw"/>
+  <text x="750" y="200" class="schema">raw schema</text>
+  <text x="750" y="226" class="entity-title">raw.upload_sessions</text>
+  <text x="1080" y="226" class="meta">feltoltesi munkamenet</text>
+  <line x1="740" y1="246" x2="1240" y2="246" class="divider"/>
+  <text x="750" y="278" class="field pk">PK id : uuid</text>
+  <text x="750" y="304" class="field">uploader_user_id : text</text>
+  <text x="750" y="330" class="field">status : text</text>
+  <text x="750" y="356" class="field">original_filename : text</text>
+  <text x="750" y="382" class="field">FK artifact_id : uuid</text>
+  <text x="750" y="408" class="field">preview_json : jsonb</text>
+  <text x="750" y="434" class="field">created_at : timestamptz</text>
+  <text x="750" y="460" class="field">updated_at : timestamptz</text>
+  <text x="750" y="492" class="small">A preview JSON a javitott, elozetes strukturat tarolja a commit folyamat elott.</text>
+
+  <rect x="90" y="580" width="700" height="420" class="box"/>
+  <rect x="90" y="580" width="700" height="64" class="header-staging"/>
+  <text x="120" y="610" class="schema">staging schema</text>
+  <text x="120" y="636" class="entity-title">staging.observations</text>
+  <text x="530" y="636" class="meta">atmeneti, ellenorzott rekordok</text>
+  <line x1="110" y1="656" x2="770" y2="656" class="divider"/>
+  <text x="120" y="688" class="field">FK upload_session_id : uuid</text>
+  <text x="120" y="714" class="field">block_id : text</text>
+  <text x="120" y="740" class="field">source_sheet : text</text>
+  <text x="120" y="766" class="field">source_row_index : integer</text>
+  <text x="120" y="792" class="field">source_column : text</text>
+  <text x="120" y="818" class="field">observation_date : date</text>
+  <text x="120" y="844" class="field">variable, value, unit</text>
+  <text x="120" y="870" class="field">normalized_value, normalized_unit</text>
+  <text x="120" y="896" class="field">plot_id, variety, treatment, location</text>
+  <text x="120" y="922" class="field">validation_status, quality_flags</text>
+  <text x="120" y="948" class="field">dimensions_json : jsonb</text>
+  <text x="120" y="980" class="small">A staging reteg az ETL koztes allapota: itt jelennek meg a szemantikus lekepzes, az egysegesites es a minosegi flag-ek.</text>
+
+  <rect x="920" y="580" width="700" height="420" class="box"/>
+  <rect x="920" y="580" width="700" height="64" class="header-harmonized"/>
+  <text x="950" y="610" class="schema">harmonized schema</text>
+  <text x="950" y="636" class="entity-title">harmonized.observations</text>
+  <text x="1330" y="636" class="meta">veglegesitett kanonikus tenyadat</text>
+  <line x1="940" y1="656" x2="1600" y2="656" class="divider"/>
+  <text x="950" y="688" class="field pk">PK (upload_session_id, block_id, source_row_index, source_column)</text>
+  <text x="950" y="714" class="field">FK upload_session_id : uuid</text>
+  <text x="950" y="740" class="field">observation_date : date</text>
+  <text x="950" y="766" class="field">variable : text</text>
+  <text x="950" y="792" class="field">value, unit</text>
+  <text x="950" y="818" class="field">normalized_value, normalized_unit</text>
+  <text x="950" y="844" class="field">plot_id, variety, treatment, location</text>
+  <text x="950" y="870" class="field">validation_status, quality_flags</text>
+  <text x="950" y="896" class="field">dimensions_json : jsonb</text>
+  <text x="950" y="928" class="small">Ez a reteg mar lekerdezheto, stabil kanonikus strukturat ad. Az indexeles elsosorban a valtozora, dimenziokra, datumra es minosegi allapotra epul.</text>
+
+  <rect x="1040" y="1060" width="580" height="160" class="box"/>
+  <rect x="1040" y="1060" width="580" height="64" class="header-safe"/>
+  <text x="1070" y="1090" class="schema">safe schema</text>
+  <text x="1070" y="1116" class="entity-title">safe.harmonized_observations_v1</text>
+  <text x="1410" y="1116" class="meta">olvasasi nezet</text>
+  <line x1="1060" y1="1136" x2="1600" y2="1136" class="divider"/>
+  <text x="1070" y="1168" class="field">A harmonized.observations oszlopait tipizalt, olvasasra szant nezetkent teszi elerhetove.</text>
+  <text x="1070" y="1194" class="small">Ez a NL query es a kontrollalt text-to-SQL pipeline elsodleges olvasasi felulete.</text>
+
+  <rect x="90" y="1040" width="760" height="180" class="box"/>
+  <rect x="90" y="1040" width="760" height="64" class="header-ops"/>
+  <text x="120" y="1070" class="schema">ops schema</text>
+  <text x="120" y="1096" class="entity-title">ops.mcp_tool_audit_log</text>
+  <text x="515" y="1096" class="meta">uzemeltetesi audit tabla</text>
+  <line x1="110" y1="1116" x2="830" y2="1116" class="divider"/>
+  <text x="120" y="1148" class="field pk">PK id : bigserial</text>
+  <text x="120" y="1174" class="field">occurred_at, correlation_id, tool_name, success, read_only</text>
+  <text x="120" y="1200" class="field">request_payload, response_payload, error_code, duration_ms, sql_text, sql_fingerprint, row_count</text>
+
+  <path d="M 610 320 C 650 320, 680 320, 720 340" class="rel" marker-end="url(#arrow)"/>
+  <text x="640" y="300" class="meta">1 : N</text>
+  <text x="625" y="336" class="small">artifact_id</text>
+
+  <path d="M 930 510 C 910 560, 800 600, 640 600" class="rel" marker-end="url(#arrow)"/>
+  <text x="760" y="545" class="meta">1 : N</text>
+  <text x="730" y="576" class="small">upload_session_id</text>
+
+  <path d="M 1050 510 C 1080 560, 1180 600, 1260 600" class="rel" marker-end="url(#arrow)"/>
+  <text x="1115" y="545" class="meta">1 : N</text>
+  <text x="1120" y="576" class="small">upload_session_id</text>
+
+  <path d="M 1270 1000 C 1270 1020, 1290 1030, 1320 1060" class="rel-dashed" marker-end="url(#arrow)"/>
+  <text x="1290" y="1028" class="meta">view source</text>
+
+  <rect x="1390" y="330" width="320" height="150" class="legend"/>
+  <text x="1420" y="366" class="note-title">Adatut</text>
+  <text x="1420" y="394" class="note">1. raw.artifacts: eredeti Excel binaris forma</text>
+  <text x="1420" y="420" class="note">2. raw.upload_sessions: preview es workflow-allapot</text>
+  <text x="1420" y="446" class="note">3. staging / harmonized: strukturalt megfigyelesek</text>
+  <text x="1420" y="472" class="note">4. safe view: biztonsagos olvasasi felulet</text>
+</svg>

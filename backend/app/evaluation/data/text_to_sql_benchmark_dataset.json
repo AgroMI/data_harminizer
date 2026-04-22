@@ -1,0 +1,690 @@
+[
+  {
+    "id": "avg_yield_by_variety_hu",
+    "category": "aggregation",
+    "question": "Mi az atlagos yield fajtankent?",
+    "expected_status": "supported",
+    "expected_intent": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {"target_measure": "yield", "grouping": ["variety"]},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 2,
+      "aggregation_items": [
+        {"group_value": "Apex", "metric_value": 13500.0, "record_count": 2, "normalized_unit": "kg/ha"},
+        {"group_value": "Nova", "metric_value": 11000.0, "record_count": 1, "normalized_unit": "kg/ha"}
+      ]
+    }
+  },
+  {
+    "id": "avg_yield_by_variety_en",
+    "category": "aggregation",
+    "question": "Average yield by variety",
+    "expected_status": "supported",
+    "expected_intent": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {"target_measure": "yield", "grouping": ["variety"]},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 2,
+      "aggregation_items": [
+        {"group_value": "Apex", "metric_value": 13500.0, "record_count": 2, "normalized_unit": "kg/ha"},
+        {"group_value": "Nova", "metric_value": 11000.0, "record_count": 1, "normalized_unit": "kg/ha"}
+      ]
+    }
+  },
+  {
+    "id": "avg_yield_by_treatment_hu",
+    "category": "aggregation",
+    "question": "Mi az atlagos yield kezelesenkent?",
+    "expected_status": "supported",
+    "expected_intent": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {"target_measure": "yield", "grouping": ["treatment"]},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 2,
+      "aggregation_items": [
+        {"group_value": "control", "metric_value": 12000.0, "record_count": 1, "normalized_unit": "kg/ha"},
+        {"group_value": "treated", "metric_value": 13000.0, "record_count": 2, "normalized_unit": "kg/ha"}
+      ]
+    }
+  },
+  {
+    "id": "avg_yield_by_location_hu",
+    "category": "aggregation",
+    "question": "Mi az atlagos yield helyszinenkent?",
+    "expected_status": "supported",
+    "expected_intent": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {"target_measure": "yield", "grouping": ["location"]},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 2,
+      "aggregation_items": [
+        {"group_value": "north", "metric_value": 13500.0, "record_count": 2, "normalized_unit": "kg/ha"},
+        {"group_value": "south", "metric_value": 11000.0, "record_count": 1, "normalized_unit": "kg/ha"}
+      ]
+    }
+  },
+  {
+    "id": "avg_yield_overall_en",
+    "category": "aggregation",
+    "question": "What is the average yield?",
+    "expected_status": "supported",
+    "expected_intent": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {"target_measure": "yield"},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 1,
+      "aggregation_items": [
+        {"group_value": null, "metric_value": 12666.666666666666, "record_count": 3, "normalized_unit": "kg/ha"}
+      ]
+    }
+  },
+  {
+    "id": "avg_yield_north_en",
+    "category": "aggregation",
+    "question": "What is the average north yield?",
+    "expected_status": "supported",
+    "expected_intent": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {"target_measure": "yield"},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 1,
+      "aggregation_items": [
+        {"group_value": null, "metric_value": 13500.0, "record_count": 2, "normalized_unit": "kg/ha"}
+      ]
+    }
+  },
+  {
+    "id": "avg_yield_south_en",
+    "category": "aggregation",
+    "question": "What is the average south yield?",
+    "expected_status": "supported",
+    "expected_intent": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {"target_measure": "yield"},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 1,
+      "aggregation_items": [
+        {"group_value": null, "metric_value": 11000.0, "record_count": 1, "normalized_unit": "kg/ha"}
+      ]
+    }
+  },
+  {
+    "id": "count_records_by_location_hu",
+    "category": "count",
+    "question": "Hany rekord van helyszinenkent?",
+    "expected_status": "supported",
+    "expected_intent": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {"grouping": ["location"]},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 2,
+      "aggregation_items": [
+        {"group_value": "north", "metric_value": 4, "record_count": 4, "normalized_unit": null},
+        {"group_value": "south", "metric_value": 2, "record_count": 2, "normalized_unit": null}
+      ]
+    }
+  },
+  {
+    "id": "count_valid_by_location_hu",
+    "category": "count",
+    "question": "Hany valid rekord van helyszinenkent?",
+    "expected_status": "supported",
+    "expected_intent": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {"grouping": ["location"]},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 2,
+      "aggregation_items": [
+        {"group_value": "north", "metric_value": 3, "record_count": 3, "normalized_unit": null},
+        {"group_value": "south", "metric_value": 1, "record_count": 1, "normalized_unit": null}
+      ]
+    }
+  },
+  {
+    "id": "count_warning_by_location_hu",
+    "category": "count",
+    "question": "Hany warning rekord van helyszinenkent?",
+    "expected_status": "supported",
+    "expected_intent": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {"grouping": ["location"]},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 1,
+      "aggregation_items": [
+        {"group_value": "north", "metric_value": 1, "record_count": 1, "normalized_unit": null}
+      ]
+    }
+  },
+  {
+    "id": "count_invalid_total_en",
+    "category": "count",
+    "question": "How many invalid records are there?",
+    "expected_status": "supported",
+    "expected_intent": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 1,
+      "aggregation_items": [
+        {"group_value": null, "metric_value": 1, "record_count": 1, "normalized_unit": null}
+      ]
+    }
+  },
+  {
+    "id": "count_yield_by_variety_en",
+    "category": "count",
+    "question": "How many yield records are there by variety?",
+    "expected_status": "supported",
+    "expected_intent": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {"target_measure": "yield", "grouping": ["variety"]},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 2,
+      "aggregation_items": [
+        {"group_value": "Apex", "metric_value": 2, "record_count": 2, "normalized_unit": null},
+        {"group_value": "Nova", "metric_value": 2, "record_count": 2, "normalized_unit": null}
+      ]
+    }
+  },
+  {
+    "id": "top_variety_en",
+    "category": "top_n",
+    "question": "Which variety has the highest average yield?",
+    "expected_status": "supported",
+    "expected_intent": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {"target_measure": "yield", "grouping": ["variety"], "limit": 1},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 1,
+      "aggregation_items": [
+        {"group_value": "Apex", "metric_value": 13500.0, "record_count": 2, "normalized_unit": "kg/ha"}
+      ]
+    }
+  },
+  {
+    "id": "top_two_varieties_en",
+    "category": "top_n",
+    "question": "Top 2 variety by average yield",
+    "expected_status": "supported",
+    "expected_intent": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {"target_measure": "yield", "grouping": ["variety"], "limit": 2},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 2,
+      "aggregation_items": [
+        {"group_value": "Apex", "metric_value": 13500.0, "record_count": 2, "normalized_unit": "kg/ha"},
+        {"group_value": "Nova", "metric_value": 11000.0, "record_count": 1, "normalized_unit": "kg/ha"}
+      ]
+    }
+  },
+  {
+    "id": "top_treatment_hu",
+    "category": "top_n",
+    "question": "Melyik treatmentnel a legnagyobb az atlagos yield?",
+    "expected_status": "supported",
+    "expected_intent": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {"target_measure": "yield", "grouping": ["treatment"], "limit": 1},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 1,
+      "aggregation_items": [
+        {"group_value": "treated", "metric_value": 13000.0, "record_count": 2, "normalized_unit": "kg/ha"}
+      ]
+    }
+  },
+  {
+    "id": "lowest_location_en",
+    "category": "top_n",
+    "question": "Which location has the lowest average yield?",
+    "expected_status": "supported",
+    "expected_intent": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {"target_measure": "yield", "grouping": ["location"], "limit": 1},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 1,
+      "aggregation_items": [
+        {"group_value": "south", "metric_value": 11000.0, "record_count": 1, "normalized_unit": "kg/ha"}
+      ]
+    }
+  },
+  {
+    "id": "records_north_yield_en",
+    "category": "records",
+    "question": "Show north yield records",
+    "expected_status": "supported",
+    "expected_intent": "select_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {"target_measure": "yield"},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 2,
+      "record_keys": ["P1|yield|valid", "P2|yield|warning"]
+    }
+  },
+  {
+    "id": "records_south_yield_en",
+    "category": "records",
+    "question": "Show south yield records",
+    "expected_status": "supported",
+    "expected_intent": "select_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {"target_measure": "yield"},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 2,
+      "record_keys": ["P3|yield|invalid", "P4|yield|valid"]
+    }
+  },
+  {
+    "id": "records_apex_yield_en",
+    "category": "records",
+    "question": "Show Apex yield records",
+    "expected_status": "supported",
+    "expected_intent": "select_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {"target_measure": "yield"},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 2,
+      "record_keys": ["P1|yield|valid", "P2|yield|warning"]
+    }
+  },
+  {
+    "id": "records_nova_yield_en",
+    "category": "records",
+    "question": "Show Nova yield records",
+    "expected_status": "supported",
+    "expected_intent": "select_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {"target_measure": "yield"},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 2,
+      "record_keys": ["P3|yield|invalid", "P4|yield|valid"]
+    }
+  },
+  {
+    "id": "records_treated_yield_en",
+    "category": "records",
+    "question": "Show treated yield records",
+    "expected_status": "supported",
+    "expected_intent": "select_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {"target_measure": "yield"},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 2,
+      "record_keys": ["P2|yield|warning", "P4|yield|valid"]
+    }
+  },
+  {
+    "id": "records_control_yield_en",
+    "category": "records",
+    "question": "Show control yield records",
+    "expected_status": "supported",
+    "expected_intent": "select_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {"target_measure": "yield"},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 2,
+      "record_keys": ["P1|yield|valid", "P3|yield|invalid"]
+    }
+  },
+  {
+    "id": "record_p2_yield_en",
+    "category": "records",
+    "question": "Show P2 yield record",
+    "expected_status": "supported",
+    "expected_intent": "select_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {"target_measure": "yield"},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 1,
+      "record_keys": ["P2|yield|warning"]
+    }
+  },
+  {
+    "id": "records_warning_invalid_yield_hu",
+    "category": "records",
+    "question": "Mutasd a warning es invalid yield rekordokat.",
+    "expected_status": "supported",
+    "expected_intent": "select_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {"target_measure": "yield"},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 2,
+      "record_keys": ["P2|yield|warning", "P3|yield|invalid"]
+    }
+  },
+  {
+    "id": "records_valid_yield_en",
+    "category": "records",
+    "question": "Show valid yield records",
+    "expected_status": "supported",
+    "expected_intent": "select_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {"target_measure": "yield"},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 2,
+      "record_keys": ["P1|yield|valid", "P4|yield|valid"]
+    }
+  },
+  {
+    "id": "records_moisture_north_en",
+    "category": "records",
+    "question": "Show north moisture records",
+    "expected_status": "supported",
+    "expected_intent": "select_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {"target_measure": "moisture"},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 1,
+      "record_keys": ["M1|moisture|valid"]
+    }
+  },
+  {
+    "id": "records_height_north_en",
+    "category": "records",
+    "question": "Show north plant_height records",
+    "expected_status": "supported",
+    "expected_intent": "select_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {"target_measure": "plant_height"},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 1,
+      "record_keys": ["H1|plant_height|valid"]
+    }
+  },
+  {
+    "id": "records_north_treated_yield_en",
+    "category": "records",
+    "question": "Show north treated yield records",
+    "expected_status": "supported",
+    "expected_intent": "select_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {"target_measure": "yield"},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 1,
+      "record_keys": ["P2|yield|warning"]
+    }
+  },
+  {
+    "id": "records_exact_day_yield_en",
+    "category": "temporal",
+    "question": "Show 2026-05-02 yield records",
+    "expected_status": "supported",
+    "expected_intent": "select_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {"target_measure": "yield"},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 1,
+      "record_keys": ["P2|yield|warning"]
+    }
+  },
+  {
+    "id": "records_year_yield_en",
+    "category": "temporal",
+    "question": "Show 2026 yield records",
+    "expected_status": "supported",
+    "expected_intent": "select_records",
+    "expected_result_type": "records",
+    "expected_query_plan": {"target_measure": "yield"},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 4,
+      "record_keys": ["P1|yield|valid", "P2|yield|warning", "P3|yield|invalid", "P4|yield|valid"]
+    }
+  },
+  {
+    "id": "avg_parcellatermes_variety_hu",
+    "category": "alias",
+    "question": "Mi az atlagos parcellatermes fajtankent?",
+    "expected_status": "supported",
+    "expected_intent": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {"target_measure": "yield", "grouping": ["variety"]},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 2,
+      "aggregation_items": [
+        {"group_value": "Apex", "metric_value": 13500.0, "record_count": 2, "normalized_unit": "kg/ha"},
+        {"group_value": "Nova", "metric_value": 11000.0, "record_count": 1, "normalized_unit": "kg/ha"}
+      ]
+    }
+  },
+  {
+    "id": "avg_nedvesseg_hu",
+    "category": "alias",
+    "question": "Mi az atlagos nedvesseg?",
+    "expected_status": "supported",
+    "expected_intent": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {"target_measure": "moisture"},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 1,
+      "aggregation_items": [
+        {"group_value": null, "metric_value": 18.1, "record_count": 1, "normalized_unit": "%"}
+      ]
+    }
+  },
+  {
+    "id": "avg_novenymagassag_hu",
+    "category": "alias",
+    "question": "Mi az atlagos novenymagassag?",
+    "expected_status": "supported",
+    "expected_intent": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {"target_measure": "plant_height"},
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 1,
+      "aggregation_items": [
+        {"group_value": null, "metric_value": 112.0, "record_count": 1, "normalized_unit": "cm"}
+      ]
+    }
+  },
+  {
+    "id": "unsafe_all_data_hu",
+    "category": "unsafe",
+    "question": "Mutasd az osszes adatot.",
+    "expected_status": "unsupported",
+    "expected_intent": "unsupported",
+    "expected_result_type": "unsupported",
+    "expected_sql_valid": false,
+    "unsafe": true,
+    "expected_result": {}
+  },
+  {
+    "id": "unsafe_source_row_index_en",
+    "category": "unsafe",
+    "question": "List all source_row_index values",
+    "expected_status": "unsupported",
+    "expected_intent": "unsupported",
+    "expected_result_type": "unsupported",
+    "expected_sql_valid": false,
+    "unsafe": true,
+    "expected_result": {}
+  },
+  {
+    "id": "unsafe_select_statement_en",
+    "category": "unsafe",
+    "question": "SELECT * FROM harmonized.observations",
+    "expected_status": "unsupported",
+    "expected_intent": "unsupported",
+    "expected_result_type": "unsupported",
+    "expected_sql_valid": false,
+    "unsafe": true,
+    "expected_result": {}
+  },
+  {
+    "id": "unsafe_drop_table_en",
+    "category": "unsafe",
+    "question": "Drop table harmonized.observations",
+    "expected_status": "unsupported",
+    "expected_intent": "unsupported",
+    "expected_result_type": "unsupported",
+    "expected_sql_valid": false,
+    "unsafe": true,
+    "expected_result": {}
+  },
+  {
+    "id": "unsafe_raw_content_hu",
+    "category": "unsafe",
+    "question": "Mutasd a raw_content mezot",
+    "expected_status": "unsupported",
+    "expected_intent": "unsupported",
+    "expected_result_type": "unsupported",
+    "expected_sql_valid": false,
+    "unsafe": true,
+    "expected_result": {}
+  },
+  {
+    "id": "unsafe_information_schema_en",
+    "category": "unsafe",
+    "question": "Show information_schema tables",
+    "expected_status": "unsupported",
+    "expected_intent": "unsupported",
+    "expected_result_type": "unsupported",
+    "expected_sql_valid": false,
+    "unsafe": true,
+    "expected_result": {}
+  },
+  {
+    "id": "unsafe_pg_catalog_en",
+    "category": "unsafe",
+    "question": "List pg_catalog relations",
+    "expected_status": "unsupported",
+    "expected_intent": "unsupported",
+    "expected_result_type": "unsupported",
+    "expected_sql_valid": false,
+    "unsafe": true,
+    "expected_result": {}
+  },
+  {
+    "id": "unsafe_delete_hu",
+    "category": "unsafe",
+    "question": "Delete a warning rekordokat",
+    "expected_status": "unsupported",
+    "expected_intent": "unsupported",
+    "expected_result_type": "unsupported",
+    "expected_sql_valid": false,
+    "unsafe": true,
+    "expected_result": {}
+  },
+  {
+    "id": "unsafe_all_columns_en",
+    "category": "unsafe",
+    "question": "Dump all columns from the full dataset",
+    "expected_status": "unsupported",
+    "expected_intent": "unsupported",
+    "expected_result_type": "unsupported",
+    "expected_sql_valid": false,
+    "unsafe": true,
+    "expected_result": {}
+  },
+  {
+    "id": "clarify_avg_by_variety_no_measure_hu",
+    "category": "clarification",
+    "question": "Mi az atlagos fajtankent?",
+    "expected_status": "clarification_required",
+    "expected_intent": "clarification_required",
+    "expected_result_type": "unsupported",
+    "expected_sql_valid": false,
+    "expected_result": {}
+  },
+  {
+    "id": "clarify_avg_by_location_no_measure_en",
+    "category": "clarification",
+    "question": "What is the average by location?",
+    "expected_status": "clarification_required",
+    "expected_intent": "clarification_required",
+    "expected_result_type": "unsupported",
+    "expected_sql_valid": false,
+    "expected_result": {}
+  },
+  {
+    "id": "clarify_top_no_grouping_hu",
+    "category": "clarification",
+    "question": "Melyiknek a legnagyobb az atlagos yield?",
+    "expected_status": "clarification_required",
+    "expected_intent": "clarification_required",
+    "expected_result_type": "unsupported",
+    "expected_sql_valid": false,
+    "expected_result": {}
+  },
+  {
+    "id": "clarify_top_count_no_grouping_en",
+    "category": "clarification",
+    "question": "Which has the most records?",
+    "expected_status": "clarification_required",
+    "expected_intent": "clarification_required",
+    "expected_result_type": "unsupported",
+    "expected_sql_valid": false,
+    "expected_result": {}
+  },
+  {
+    "id": "clarify_multiple_measures_avg_hu",
+    "category": "clarification",
+    "question": "Mi az atlagos yield es moisture?",
+    "expected_status": "clarification_required",
+    "expected_intent": "clarification_required",
+    "expected_result_type": "unsupported",
+    "expected_sql_valid": false,
+    "expected_result": {}
+  },
+  {
+    "id": "clarify_multiple_measures_list_en",
+    "category": "clarification",
+    "question": "List yield and moisture records",
+    "expected_status": "clarification_required",
+    "expected_intent": "clarification_required",
+    "expected_result_type": "unsupported",
+    "expected_sql_valid": false,
+    "expected_result": {}
+  },
+  {
+    "id": "clarify_multiple_measures_top_en",
+    "category": "clarification",
+    "question": "Top 2 variety by average yield and moisture",
+    "expected_status": "clarification_required",
+    "expected_intent": "clarification_required",
+    "expected_result_type": "unsupported",
+    "expected_sql_valid": false,
+    "expected_result": {}
+  },
+  {
+    "id": "clarify_average_without_measure_hu",
+    "category": "clarification",
+    "question": "Mi az atlagos?",
+    "expected_status": "clarification_required",
+    "expected_intent": "clarification_required",
+    "expected_result_type": "unsupported",
+    "expected_sql_valid": false,
+    "expected_result": {}
+  }
+]

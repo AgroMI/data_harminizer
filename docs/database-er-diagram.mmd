@@ -1,0 +1,108 @@
+---
+title: Adatbazis-reteg es ER-diagram
+---
+
+erDiagram
+    RAW_ARTIFACTS ||--o{ RAW_UPLOAD_SESSIONS : "artifact_id"
+    RAW_UPLOAD_SESSIONS ||--o{ STAGING_OBSERVATIONS : "upload_session_id"
+    RAW_UPLOAD_SESSIONS ||--o{ HARMONIZED_OBSERVATIONS : "upload_session_id"
+    HARMONIZED_OBSERVATIONS ||..o{ SAFE_HARMONIZED_OBSERVATIONS_V1 : "view source"
+
+    RAW_ARTIFACTS {
+        uuid id PK
+        text original_filename
+        text mime_type
+        bigint file_size_bytes
+        text file_hash_sha256
+        timestamptz uploaded_at
+        text parser_version
+        text storage_type
+        bytea raw_content
+        jsonb sheet_manifest
+        timestamptz preview_generated_at
+    }
+
+    RAW_UPLOAD_SESSIONS {
+        uuid id PK
+        text uploader_user_id
+        text status
+        text original_filename
+        uuid artifact_id FK
+        jsonb preview_json
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    STAGING_OBSERVATIONS {
+        uuid upload_session_id FK
+        text block_id
+        text source_sheet
+        integer source_row_index
+        text source_column
+        date observation_date
+        text variable
+        numeric value
+        text unit
+        numeric normalized_value
+        text normalized_unit
+        text plot_id
+        text variety
+        text treatment
+        text location
+        text validation_status
+        jsonb quality_flags
+        jsonb dimensions_json
+    }
+
+    HARMONIZED_OBSERVATIONS {
+        uuid upload_session_id FK
+        text block_id
+        text source_sheet
+        integer source_row_index
+        text source_column
+        date observation_date
+        text variable
+        numeric value
+        text unit
+        numeric normalized_value
+        text normalized_unit
+        text plot_id
+        text variety
+        text treatment
+        text location
+        text validation_status
+        jsonb quality_flags
+        jsonb dimensions_json
+    }
+
+    SAFE_HARMONIZED_OBSERVATIONS_V1 {
+        text upload_session_id
+        date observation_date
+        text plot_id
+        text variety
+        text treatment
+        text location
+        text variable
+        double value
+        text unit
+        double normalized_value
+        text normalized_unit
+        text validation_status
+        jsonb quality_flags
+    }
+
+    OPS_MCP_TOOL_AUDIT_LOG {
+        bigint id PK
+        timestamptz occurred_at
+        text correlation_id
+        text tool_name
+        boolean success
+        boolean read_only
+        jsonb request_payload
+        jsonb response_payload
+        text error_code
+        integer duration_ms
+        text sql_text
+        text sql_fingerprint
+        integer row_count
+    }
