@@ -15,6 +15,7 @@ from backend.app.mcp import (
     MCPToolsListResponse,
     default_mcp_server,
 )
+from backend.app.mcp_external import mcp_external_router
 from backend.app.mcp.audit import build_audit_list_response
 from backend.app.schemas import (
     CommitResponse,
@@ -87,6 +88,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(mcp_external_router)
 
 
 @app.get("/health", response_model=HealthResponse)
