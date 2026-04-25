@@ -347,6 +347,67 @@ docker compose run --rm -v "$PWD":/app backend pytest \
 
 This complements the fake DB tests: the unit layer validates isolated heuristics quickly, while the e2e layer proves that the full upload -> preview -> save -> commit -> observations pipeline works with real Excel files and a real PostgreSQL database.
 
+## Continuous Integration
+
+GitHub Actions CI is defined in `.github/workflows/ci.yml` and runs on `push` and `pull_request` events.
+
+The workflow contains three jobs:
+
+- `backend`
+  - sets up Python 3.12
+  - installs `backend/requirements.txt`
+  - compiles `backend/` and `etl/`
+  - imports `backend.app.main`
+  - starts a PostgreSQL/PostGIS service and runs `backend/scripts/run_migrations.py`
+  - runs a selected fast backend pytest set covering ETL typing, block detection, unit harmonization, block semantics, Koltay fixture parsing and benchmark dataset sanity checks
+- `frontend`
+  - sets up Node.js 20
+  - runs `npm ci`
+  - runs `npm run build`
+- `docker-build`
+  - builds the backend Docker image from `backend/Dockerfile`
+  - builds the frontend Docker image from `frontend/Dockerfile`
+
+Local reproduction:
+
+```bash
+python -m pip install -r backend/requirements.txt
+python -m compileall backend etl
+python -c "import backend.app.main"
+python -m pytest \
+  tests/backend/test_etl_type_inference.py \
+  tests/backend/test_block_detector_horizontal_split.py \
+  tests/backend/test_unit_harmonization.py \
+  tests/backend/test_block_semantics.py \
+  tests/backend/test_koltay_parsing.py \
+  tests/backend/test_nl_query_benchmark_dataset.py \
+  tests/backend/test_text_to_sql_benchmark_dataset.py \
+  -q
+
+docker compose up -d db
+DATABASE_URL=postgresql://thesis:thesis@localhost:5432/thesis \
+MIGRATIONS_DIR="$PWD/db/migrations" \
+python backend/scripts/run_migrations.py
+
+cd frontend
+npm ci
+npm run build
+```
+
+Docker build reproduction from the repository root:
+
+```bash
+docker build -f backend/Dockerfile -t thesis-backend:ci .
+docker build -f frontend/Dockerfile -t thesis-frontend:ci .
+```
+
+Current CI limits:
+
+- no automatic CD/deployment is implemented
+- no monitoring or alerting is implemented
+- broader API/service tests and real PostgreSQL e2e tests remain local/Docker Compose validation steps
+- the frontend currently has no separate `lint` script, so CI validates it through `npm run build`
+
 ## Commit behavior
 
 The commit step now uses semantic roles instead of only inferred types:

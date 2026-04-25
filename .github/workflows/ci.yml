@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend tests and migrations
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: thesis
+          POSTGRES_USER: thesis
+          POSTGRES_PASSWORD: thesis
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U thesis -d thesis"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://thesis:thesis@localhost:5432/thesis
+      MIGRATIONS_DIR: ${{ github.workspace }}/db/migrations
+      LOCAL_LLM_ENABLED: "false"
+      LOCAL_LLM_HYBRID_ENABLED: "false"
+      LOCAL_LLM_TOOL_ORCHESTRATION_ENABLED: "false"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r backend/requirements.txt
+
+      - name: Compile backend and ETL modules
+        run: python -m compileall backend etl
+
+      - name: Import FastAPI application
+        run: python -c "import backend.app.main"
+
+      - name: Run database migrations
+        run: python backend/scripts/run_migrations.py
+
+      - name: Run selected fast backend tests
+        run: |
+          python -m pytest \
+            tests/backend/test_etl_type_inference.py \
+            tests/backend/test_block_detector_horizontal_split.py \
+            tests/backend/test_unit_harmonization.py \
+            tests/backend/test_block_semantics.py \
+            tests/backend/test_koltay_parsing.py \
+            tests/backend/test_nl_query_benchmark_dataset.py \
+            tests/backend/test_text_to_sql_benchmark_dataset.py \
+            -q
+
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+  docker-build:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build backend Docker image
+        run: docker build -f backend/Dockerfile -t thesis-backend:ci .
+
+      - name: Build frontend Docker image
+        run: docker build -f frontend/Dockerfile -t thesis-frontend:ci .
