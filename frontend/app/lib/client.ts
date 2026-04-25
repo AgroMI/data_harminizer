@@ -11,6 +11,11 @@ export function toErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
+export function formatNumber(value: number | null | undefined, fallback = "n/a"): string {
+  if (value === null || value === undefined) return fallback;
+  return parseFloat(value.toFixed(2)).toString();
+}
+
 export function readOnlyText(value: string | null | undefined, fallback = "n/a"): string {
   if (!value) {
     return fallback;

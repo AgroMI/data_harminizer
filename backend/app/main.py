@@ -36,6 +36,8 @@ from backend.app.schemas import (
     ToolDefinitionResponse,
     UploadCreateResponse,
     UploadDetailResponse,
+    UploadListItem,
+    UploadListResponse,
     UploadPreviewResponse,
     AggregationGroupBy,
     AggregationMetric,
@@ -66,6 +68,7 @@ from backend.app.services.uploads import (
     create_upload_session,
     get_upload_session,
     get_upload_preview,
+    list_upload_sessions,
 )
 from etl.types import CanonicalMeasure, CanonicalUnit, QualityFlag, ValidationStatus
 
@@ -89,6 +92,13 @@ app.add_middleware(
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
     return HealthResponse(status="ok")
+
+
+@app.get("/uploads", response_model=UploadListResponse)
+def list_uploads(limit: int = Query(default=50, ge=1, le=200)) -> UploadListResponse:
+    items = list_upload_sessions(limit=limit)
+    validated = [UploadListItem.model_validate(item) for item in items]
+    return UploadListResponse(count=len(validated), uploads=validated)
 
 
 @app.post("/uploads", response_model=UploadCreateResponse)
@@ -132,7 +142,12 @@ def update_preview_edits(upload_id: str, payload: EditRequest) -> UploadPreviewR
         )
         for item in payload.columns
     ]
-    response = apply_preview_edits(upload_id, edits)
+    response = apply_preview_edits(
+        upload_id,
+        edits,
+        year_override=payload.year_override,
+        year_override_provided=True,
+    )
     return UploadPreviewResponse.model_validate(response)
 
 
@@ -150,7 +165,7 @@ def commit_upload(upload_id: str) -> CommitResponse:
 def list_harmonized_query_observations_endpoint(
     limit: int = Query(default=100, ge=1, le=1000),
     upload_session_id: str | None = None,
-    variable: CanonicalMeasure | None = None,
+    variable: str | None = None,
     variety: str | None = None,
     location: str | None = None,
     treatment: str | None = None,
@@ -185,7 +200,7 @@ def list_harmonized_aggregations_endpoint(
     group_by: AggregationGroupBy,
     metric: AggregationMetric,
     upload_session_id: str | None = None,
-    variable: CanonicalMeasure | None = None,
+    variable: str | None = None,
     variety: str | None = None,
     location: str | None = None,
     treatment: str | None = None,

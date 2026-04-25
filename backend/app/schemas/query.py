@@ -5,7 +5,7 @@ from datetime import date as DateValue
 from pydantic import BaseModel, Field
 
 from backend.app.schemas.common import AggregationGroupBy, AggregationMetric
-from etl.types import CanonicalMeasure, CanonicalUnit, QualityFlag, SupportedUnit, ValidationStatus
+from etl.types import CanonicalUnit, QualityFlag, SupportedUnit, ValidationStatus
 
 
 class HarmonizedObservationListItem(BaseModel):
@@ -15,7 +15,8 @@ class HarmonizedObservationListItem(BaseModel):
     variety: str | None = None
     treatment: str | None = None
     location: str | None = None
-    variable: CanonicalMeasure | None = None
+    replicate: str | None = None
+    variable: str | None = None
     value: float | None = None
     unit: SupportedUnit | None = None
     normalized_value: float | None = None
@@ -53,7 +54,7 @@ class HarmonizedQueryMetadataResponse(BaseModel):
     supported_metrics: list[AggregationMetric] = Field(default_factory=list)
     supported_validation_statuses: list[ValidationStatus] = Field(default_factory=list)
     supported_quality_flags: list[QualityFlag] = Field(default_factory=list)
-    available_variables: list[CanonicalMeasure] = Field(default_factory=list)
+    available_variables: list[str] = Field(default_factory=list)
     available_normalized_units: list[CanonicalUnit] = Field(default_factory=list)
     available_varieties: list[str] = Field(default_factory=list)
     available_locations: list[str] = Field(default_factory=list)

@@ -6,23 +6,107 @@ import { useRouter } from "next/navigation";
 
 import { EmptyState } from "../components/EmptyState";
 import { Notice } from "../components/Notice";
-import { WorkflowStepper } from "../components/WorkflowStepper";
 import { API_BASE, readProblemDetail, toErrorMessage } from "../lib/client";
-import { pushRecentUpload, readRecentUploads, type RecentUploadItem } from "../lib/recent_uploads";
-import { primaryWorkflowSteps } from "../lib/workflow";
+import type { UploadListItem, UploadListResponse } from "../lib/api_types";
 
-type UploadResponse = {
-  id: string;
-};
+type UploadResponse = { id: string };
 
 function formatFileSize(size: number): string {
-  if (size < 1024) {
-    return `${size} B`;
-  }
-  if (size < 1024 * 1024) {
-    return `${(size / 1024).toFixed(1)} KB`;
-  }
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function StatusBadge({ status }: { status: string }) {
+  if (status === "committed") {
+    return <span className="badge bg-emerald-100 text-emerald-700">Committed</span>;
+  }
+  if (status === "failed") {
+    return <span className="badge bg-rose-100 text-rose-700">Failed</span>;
+  }
+  return <span className="badge bg-amber-100 text-amber-700">Review pending</span>;
+}
+
+function UploadHistory() {
+  const [uploads, setUploads] = useState<UploadListItem[] | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetch(`${API_BASE}/uploads`)
+      .then((r) => {
+        if (!r.ok) throw new Error("Failed to load");
+        return r.json() as Promise<UploadListResponse>;
+      })
+      .then((data) => setUploads(data.uploads))
+      .catch(() => setError("Could not load upload history."));
+  }, []);
+
+  if (error) {
+    return <Notice tone="error">{error}</Notice>;
+  }
+
+  if (uploads === null) {
+    return (
+      <div className="space-y-3">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="h-12 animate-pulse rounded-xl bg-slate-100" />
+        ))}
+      </div>
+    );
+  }
+
+  if (uploads.length === 0) {
+    return (
+      <EmptyState
+        title="No uploads yet"
+        body="Once you upload a workbook it will appear here."
+      />
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-slate-100">
+            <th className="py-2.5 pr-6 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">File</th>
+            <th className="py-2.5 pr-6 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Status</th>
+            <th className="py-2.5 pr-6 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Sheets</th>
+            <th className="py-2.5 pr-6 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Size</th>
+            <th className="py-2.5 pr-6 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Uploaded</th>
+            <th className="py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-400" />
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-50">
+          {uploads.map((item) => (
+            <tr key={item.id} className="group">
+              <td className="py-3.5 pr-6 font-medium text-slate-900">{item.original_filename}</td>
+              <td className="py-3.5 pr-6">
+                <StatusBadge status={item.status} />
+              </td>
+              <td className="py-3.5 pr-6 text-slate-500">{item.sheet_count}</td>
+              <td className="py-3.5 pr-6 text-slate-500">
+                {item.file_size_bytes != null ? formatFileSize(item.file_size_bytes) : "—"}
+              </td>
+              <td className="py-3.5 pr-6 text-slate-500">
+                {item.uploaded_at
+                  ? new Date(item.uploaded_at).toLocaleString("hu-HU")
+                  : "—"}
+              </td>
+              <td className="py-3.5 text-right">
+                <Link
+                  href={`/uploads/${encodeURIComponent(item.id)}?stage=review`}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-cyan-200 hover:text-cyan-700"
+                >
+                  Open <span aria-hidden>→</span>
+                </Link>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 export default function UploadPage() {
@@ -30,16 +114,9 @@ export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [recentUploads, setRecentUploads] = useState<RecentUploadItem[]>([]);
-
-  useEffect(() => {
-    setRecentUploads(readRecentUploads());
-  }, []);
 
   const selectedFileLabel = useMemo(() => {
-    if (!file) {
-      return "Choose an .xls or .xlsx workbook";
-    }
+    if (!file) return null;
     return `${file.name} · ${formatFileSize(file.size)}`;
   }, [file]);
 
@@ -60,7 +137,7 @@ export default function UploadPage() {
 
       const response = await fetch(`${API_BASE}/uploads`, {
         method: "POST",
-        body: formData
+        body: formData,
       });
 
       if (!response.ok) {
@@ -68,7 +145,6 @@ export default function UploadPage() {
       }
 
       const data = (await response.json()) as UploadResponse;
-      setRecentUploads(pushRecentUpload({ id: data.id, filename: file.name }));
       router.push(`/uploads/${data.id}?stage=review`);
     } catch (caught) {
       setError(toErrorMessage(caught, "Upload failed."));
@@ -78,109 +154,77 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="grid gap-6">
+    <div className="space-y-5">
       <section className="surface-card px-6 py-8 sm:px-8 sm:py-10">
-        <div className="grid gap-8 lg:grid-cols-[1.15fr,0.85fr]">
-          <div className="space-y-5">
-            <div className="space-y-3">
-              <p className="eyebrow">Step 1</p>
-              <h1 className="text-4xl font-semibold tracking-tight text-slate-950">Upload a workbook</h1>
-              <p className="max-w-2xl text-base leading-7 text-slate-600">
-                Start with a single Excel file. The system will parse the sheets, detect blocks and open a focused review workflow for mapping and validation.
+        <div className="mb-7 space-y-1.5">
+          <p className="eyebrow">New upload</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Upload a workbook</h1>
+          <p className="text-sm leading-6 text-slate-500">
+            Accepted formats: .xls · .xlsx · .xlsm · .xltx · .xltm — one file per run. You&apos;ll land in the review step automatically.
+          </p>
+        </div>
+
+        <form onSubmit={onSubmit} className="space-y-4">
+          <label
+            htmlFor="file-upload"
+            className="group flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/60 px-6 py-10 text-center transition hover:border-cyan-300 hover:bg-cyan-50/40"
+          >
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-lg shadow-panel transition group-hover:shadow-float">
+              ↑
+            </div>
+            <div className="space-y-1">
+              {selectedFileLabel ? (
+                <p className="font-semibold text-slate-900">{selectedFileLabel}</p>
+              ) : (
+                <p className="font-semibold text-slate-700">Drop a file here or click to browse</p>
+              )}
+              <p className="text-sm text-slate-400">
+                {selectedFileLabel ? "Click to replace the selected file." : ".xls, .xlsx, .xlsm, .xltx, .xltm"}
               </p>
             </div>
+            <input
+              id="file-upload"
+              type="file"
+              className="sr-only"
+              accept=".xls,.xlsx,.xlsm,.xltx,.xltm"
+              onChange={(event) => {
+                setFile(event.target.files?.[0] ?? null);
+                setError("");
+              }}
+            />
+          </label>
 
-            <WorkflowStepper steps={primaryWorkflowSteps()} activeKey="upload" />
+          {error ? <Notice tone="error">{error}</Notice> : null}
 
-            <Notice tone="info" title="Main path">
-              {"Upload -> review -> mapping -> validation -> commit -> browse -> AI query."}
-            </Notice>
-          </div>
-
-          <div className="surface-card-muted p-5">
-            <p className="eyebrow">Before you upload</p>
-            <ul className="mt-3 grid gap-2 text-sm leading-6 text-slate-600">
-              <li>Accepted formats: `.xls`, `.xlsx`, `.xlsm`, `.xltx`, `.xltm`</li>
-              <li>Use one workbook per run</li>
-              <li>After upload you will land in the review step automatically</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-6 lg:grid-cols-[1.15fr,0.85fr]">
-        <section className="surface-card px-6 py-8">
-          <div className="space-y-3">
-            <p className="eyebrow">Upload</p>
-            <h2 className="text-2xl font-semibold tracking-tight text-slate-950">Drop a file and continue</h2>
-            <p className="text-sm leading-6 text-slate-600">
-              One primary action only: upload the workbook and move into the guided workflow.
-            </p>
-          </div>
-
-          <form onSubmit={onSubmit} className="mt-8 space-y-5">
-            <label
-              htmlFor="file-upload"
-              className="group flex cursor-pointer flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-slate-300 bg-slate-50/80 px-6 py-12 text-center transition hover:border-cyan-300 hover:bg-cyan-50/70"
-            >
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-xl shadow-panel">
-                ↑
-              </div>
-              <p className="mt-5 text-base font-semibold text-slate-900">{selectedFileLabel}</p>
-              <p className="mt-2 text-sm text-slate-500">Click to browse or replace the selected workbook.</p>
-              <input
-                id="file-upload"
-                type="file"
-                className="sr-only"
-                accept=".xls,.xlsx,.xlsm,.xltx,.xltm"
-                onChange={(event) => setFile(event.target.files?.[0] || null)}
-              />
-            </label>
-
-            {error ? <Notice tone="error">{error}</Notice> : null}
-
-            <div className="flex flex-wrap gap-3">
-              <button type="submit" className="btn-primary px-6" disabled={loading}>
-                {loading ? "Uploading..." : "Upload and open review"}
-              </button>
-              <button type="button" className="btn-ghost px-6" onClick={() => setFile(null)} disabled={!file || loading}>
+          <div className="flex flex-wrap gap-3">
+            <button type="submit" className="btn-primary px-7" disabled={loading || !file}>
+              {loading ? "Uploading…" : "Upload and continue"}
+            </button>
+            {file ? (
+              <button
+                type="button"
+                className="btn-ghost px-7"
+                onClick={() => setFile(null)}
+                disabled={loading}
+              >
                 Clear
               </button>
-            </div>
-          </form>
-        </section>
-
-        <section className="surface-card-muted px-6 py-8">
-          <div className="space-y-3">
-            <p className="eyebrow">Recent uploads</p>
-            <h2 className="text-2xl font-semibold tracking-tight text-slate-950">Pick up where you left off</h2>
+            ) : null}
           </div>
+        </form>
+      </section>
 
-          <div className="mt-6">
-            {recentUploads.length === 0 ? (
-              <EmptyState
-                title="No recent uploads"
-                body="Once you upload a workbook, it will appear here as a quick shortcut back into the workflow."
-              />
-            ) : (
-              <div className="grid gap-3">
-                {recentUploads.map((item) => (
-                  <Link
-                    key={item.id}
-                    href={`/uploads/${encodeURIComponent(item.id)}?stage=review`}
-                    className="rounded-[1.25rem] border border-slate-200 bg-white px-4 py-4 transition hover:border-cyan-200"
-                  >
-                    <p className="font-semibold text-slate-900">{item.filename}</p>
-                    <p className="mt-1 text-xs text-slate-500">{item.id}</p>
-                    <p className="mt-2 text-sm text-slate-600">
-                      Last opened {new Date(item.visitedAt).toLocaleString("hu-HU")}
-                    </p>
-                  </Link>
-                ))}
-              </div>
-            )}
+      <section className="surface-card px-6 py-8 sm:px-8 sm:py-10">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+          <div className="space-y-1.5">
+            <p className="eyebrow">Előzmények</p>
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-950">Korábbi feltöltések</h2>
           </div>
-        </section>
+          <Link href="/uploads" className="btn-ghost px-5 text-sm">
+            Összes megtekintése →
+          </Link>
+        </div>
+        <UploadHistory />
       </section>
     </div>
   );

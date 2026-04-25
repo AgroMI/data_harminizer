@@ -45,6 +45,20 @@ INSERT INTO raw.artifacts (
 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 """
 
+LIST_UPLOADS_SQL = """
+SELECT
+    s.id,
+    s.status,
+    s.original_filename,
+    a.file_size_bytes,
+    a.uploaded_at,
+    COALESCE(jsonb_array_length(a.sheet_manifest), 0) AS sheet_count
+FROM raw.upload_sessions AS s
+LEFT JOIN raw.artifacts AS a ON a.id = s.artifact_id
+ORDER BY COALESCE(a.uploaded_at, s.created_at) DESC
+LIMIT %s
+"""
+
 SELECT_UPLOAD_DETAIL_SQL = """
 SELECT
     s.id,
@@ -66,6 +80,24 @@ FROM raw.upload_sessions AS s
 LEFT JOIN raw.artifacts AS a ON a.id = s.artifact_id
 WHERE s.id = %s
 """
+
+
+def list_upload_sessions(limit: int = 50) -> list[dict[str, Any]]:
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(LIST_UPLOADS_SQL, (limit,))
+            rows = cur.fetchall()
+    return [
+        {
+            "id": str(row["id"]),
+            "status": str(row["status"]),
+            "original_filename": str(row["original_filename"]),
+            "file_size_bytes": row.get("file_size_bytes"),
+            "sheet_count": int(row.get("sheet_count") or 0),
+            "uploaded_at": row.get("uploaded_at"),
+        }
+        for row in rows
+    ]
 
 
 def create_upload_session(*, file_bytes: bytes, filename: str, mime_type: str) -> dict[str, Any]:

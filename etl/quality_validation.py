@@ -6,7 +6,6 @@ from etl.types import CanonicalMeasure, QualityFlag, ValidationStatus
 INVALID_FLAGS: set[QualityFlag] = {
     "missing_required_dimension",
     "missing_observation_date",
-    "missing_unit",
     "missing_measure_value",
 }
 
@@ -42,7 +41,7 @@ def validate_observation_records(records: list[MutableMapping[str, Any]]) -> Non
         if record.get("value") is None and record.get("normalized_value") is None:
             _append_flag(record, "missing_measure_value")
 
-        if record.get("unit") is None or record.get("normalized_unit") is None:
+        if record.get("unit") is None and record.get("normalized_unit") is None:
             _append_flag(record, "missing_unit")
 
         if record.get("_requires_observation_date") and record.get("observation_date") is None:
@@ -67,6 +66,9 @@ def validate_observation_records(records: list[MutableMapping[str, Any]]) -> Non
             record.get("treatment"),
             record.get("location"),
             record.get("variable"),
+            record.get("unit"),
+            (record.get("dimensions_json") or {}).get("replicate"),
+            record.get("source_column"),
         )
         duplicate_groups[duplicate_key].append(record)
 

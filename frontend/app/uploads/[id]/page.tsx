@@ -254,6 +254,7 @@ function MappingRow({
                 <option value="variety">variety</option>
                 <option value="treatment">treatment</option>
                 <option value="location">location</option>
+                <option value="replicate">replicate</option>
               </select>
             ) : (
               <div className="input-shell flex items-center text-slate-500">
@@ -297,6 +298,77 @@ function MappingRow({
         </p>
       ) : null}
     </article>
+  );
+}
+
+function YearOverridePanel({
+  blocks,
+  yearOverride,
+  onUpdate
+}: {
+  blocks: PreviewBlock[];
+  yearOverride: number | null;
+  onUpdate: (value: number | null) => void;
+}) {
+  const blocksNeedingYear = blocks.filter((block) => {
+    const hasDateColumn = block.type_suggestions.some((s) => s.semantic_role === "date");
+    return !hasDateColumn;
+  });
+
+  if (blocksNeedingYear.length === 0) {
+    return null;
+  }
+
+  const inferredYears = [...new Set(blocksNeedingYear.map((b) => b.inferred_year).filter((y): y is number => y !== null))];
+  const effectiveYear = yearOverride ?? (inferredYears.length === 1 ? inferredYears[0] : null);
+
+  return (
+    <div className="mt-5 rounded-[1.25rem] border border-cyan-200 bg-cyan-50 px-4 py-4">
+      <p className="text-sm font-semibold text-cyan-900">Observation year</p>
+      <p className="mt-1 text-sm text-cyan-800">
+        {inferredYears.length > 0
+          ? `Year detected from document: ${inferredYears.join(", ")}. You can override it below.`
+          : "No year was found in the document or filename. Set a year override to proceed."}
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <label className="grid gap-1">
+          <span className="text-xs font-medium uppercase tracking-[0.16em] text-cyan-700">Year override</span>
+          <input
+            type="number"
+            min={1900}
+            max={2100}
+            placeholder={effectiveYear != null ? String(effectiveYear) : "e.g. 2007"}
+            value={yearOverride ?? ""}
+            onChange={(e) => {
+              const raw = e.target.value;
+              if (!raw) {
+                onUpdate(null);
+              } else {
+                const parsed = parseInt(raw, 10);
+                if (!isNaN(parsed) && parsed >= 1900 && parsed <= 2100) {
+                  onUpdate(parsed);
+                }
+              }
+            }}
+            className="input-shell w-32"
+          />
+        </label>
+        {yearOverride !== null ? (
+          <button
+            type="button"
+            className="mt-4 text-xs font-medium text-cyan-700 underline"
+            onClick={() => onUpdate(null)}
+          >
+            Clear override
+          </button>
+        ) : null}
+      </div>
+      {effectiveYear !== null ? (
+        <p className="mt-2 text-xs text-cyan-700">
+          Observations without a row-level date will use <strong>{effectiveYear}</strong> as the observation year.
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -425,7 +497,10 @@ function UploadWorkflowPageContent() {
     return { measures, dimensions, dates, ignored, warnings };
   }, [draftPreview]);
 
-  const issues = useMemo(() => buildDraftIssues(draftPreview), [draftPreview]);
+  const issues = useMemo(
+    () => buildDraftIssues(draftPreview, draftPreview?.year_override ?? null),
+    [draftPreview]
+  );
 
   const commitEstimate = useMemo(() => estimateCommitRows(draftPreview), [draftPreview]);
 
@@ -456,6 +531,15 @@ function UploadWorkflowPageContent() {
 
       Object.assign(column, updater(column));
       return next;
+    });
+    setSaveState("");
+    setCommitState("");
+  }
+
+  function updateYearOverride(value: number | null): void {
+    setDraftPreview((current) => {
+      if (!current) return current;
+      return { ...current, year_override: value };
     });
     setSaveState("");
     setCommitState("");
@@ -635,6 +719,9 @@ function UploadWorkflowPageContent() {
                   <p className="font-semibold text-slate-900">{block.block_id}</p>
                   <p className="mt-1 text-sm text-slate-600">{block.sheet || "n/a"} · {block.range || "n/a"}</p>
                   <p className="mt-2 text-sm text-slate-500">{block.type_suggestions.length} columns</p>
+                  {block.inferred_year != null ? (
+                    <p className="mt-1 text-xs font-medium text-cyan-700">Year: {block.inferred_year}</p>
+                  ) : null}
                 </button>
               ))}
             </div>
@@ -718,6 +805,11 @@ function UploadWorkflowPageContent() {
           <section className="surface-card p-5">
             <p className="eyebrow">Blocking issues</p>
             <h2 className="text-xl font-semibold tracking-tight text-slate-950">What must be fixed before commit</h2>
+            <YearOverridePanel
+              blocks={draftPreview.blocks}
+              yearOverride={draftPreview.year_override ?? null}
+              onUpdate={updateYearOverride}
+            />
             <div className="mt-5">
               {issues.errors.length === 0 ? (
                 <Notice tone="success" title="Ready to continue">
@@ -768,6 +860,11 @@ function UploadWorkflowPageContent() {
           <section className="surface-card p-5">
             <p className="eyebrow">Commit summary</p>
             <h2 className="text-xl font-semibold tracking-tight text-slate-950">What will be written</h2>
+            <YearOverridePanel
+              blocks={draftPreview.blocks}
+              yearOverride={draftPreview.year_override ?? null}
+              onUpdate={updateYearOverride}
+            />
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               <SummaryCard label="Estimated observations" value={commitEstimate} emphasis />
               <SummaryCard label="Measure columns" value={mappingSummary.measures} />
@@ -881,7 +978,14 @@ function UploadWorkflowPageContent() {
   );
 }
 
-function buildDraftIssues(preview: PreviewPayload | null): { errors: DraftIssue[]; warnings: DraftIssue[] } {
+function blockEffectiveYear(block: PreviewBlock, yearOverride: number | null): number | null {
+  return yearOverride ?? block.inferred_year ?? null;
+}
+
+function buildDraftIssues(
+  preview: PreviewPayload | null,
+  yearOverride: number | null = null
+): { errors: DraftIssue[]; warnings: DraftIssue[] } {
   const errors: DraftIssue[] = [];
   const warnings: DraftIssue[] = [];
 
@@ -892,6 +996,16 @@ function buildDraftIssues(preview: PreviewPayload | null): { errors: DraftIssue[
         level: "error",
         blockId: block.block_id,
         message: "Only one column can be marked as date in a single block."
+      });
+    }
+
+    const hasDateColumn = dateColumns.length > 0;
+    if (!hasDateColumn && blockEffectiveYear(block, yearOverride) === null) {
+      errors.push({
+        level: "error",
+        blockId: block.block_id,
+        message:
+          "No observation year available. Either add a date column or set a year override — the data cannot be committed without a date."
       });
     }
 
@@ -906,29 +1020,29 @@ function buildDraftIssues(preview: PreviewPayload | null): { errors: DraftIssue[
           });
         }
         if (!item.canonical_measure) {
-          errors.push({
-            level: "error",
+          warnings.push({
+            level: "warning",
             blockId: block.block_id,
             column: item.column,
-            message: "Select a canonical measure."
+            message: "No canonical measure selected — column will be stored under its raw name."
           });
         }
-        if (!item.unit) {
-          errors.push({
-            level: "error",
+        if (item.canonical_measure && !item.unit) {
+          warnings.push({
+            level: "warning",
             blockId: block.block_id,
             column: item.column,
-            message: "Select a source unit."
+            message: "No source unit selected — value will be stored without unit normalisation."
           });
         }
       }
 
       if (item.semantic_role === "dimension" && !item.canonical_dimension) {
-        errors.push({
-          level: "error",
+        warnings.push({
+          level: "warning",
           blockId: block.block_id,
           column: item.column,
-          message: "Select a canonical dimension."
+          message: "No canonical dimension selected — values will be stored under the raw column name."
         });
       }
 

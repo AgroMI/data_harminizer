@@ -13,7 +13,6 @@ BRIDGE_CUT_MAX_CELLS = 5
 LABEL_BRIDGE_MAX_FILL_RATIO = 0.60
 LABEL_BRIDGE_MIN_TEXT_RATIO = 0.80
 LABEL_BRIDGE_MAX_UNIQUE_VALUES = 16
-LABEL_BRIDGE_MAX_UNIQUE_RATIO = 0.60
 SOFT_COL_THRESHOLD = 0.05
 SOFT_ROW_THRESHOLD = 0.05
 DENSE_COL_THRESHOLD = 0.30
@@ -24,6 +23,7 @@ MIN_DENSE_COLS = 2
 MIN_DENSE_ROWS = 2
 MIN_NONEMPTY_CELLS = 20
 MAX_ITER = 5
+MAX_MERGE_GAP_ROWS = 5
 
 
 def _is_non_empty_cell(value: Any) -> bool:
@@ -352,10 +352,6 @@ def _is_label_like_vertical_cut_band(
 
     unique_text_values = len(set(text_like_tokens))
     if unique_text_values > LABEL_BRIDGE_MAX_UNIQUE_VALUES:
-        return False
-
-    unique_ratio = unique_text_values / len(text_like_tokens)
-    if unique_ratio > LABEL_BRIDGE_MAX_UNIQUE_RATIO:
         return False
 
     return True
@@ -842,6 +838,86 @@ def _merge_overlapping_boxes(boxes: list[dict[str, int]]) -> list[dict[str, int]
     return merged
 
 
+def _gap_rows_are_empty(
+    grid: list[list[Any]],
+    row_from: int,
+    row_to: int,
+    col_start: int,
+    col_end: int,
+) -> bool:
+    for ri in range(row_from, min(row_to + 1, len(grid))):
+        row = grid[ri]
+        for ci in range(col_start, min(col_end + 1, len(row))):
+            if _is_non_empty_cell(row[ci]):
+                return False
+    return True
+
+
+def _merge_same_column_span_boxes(
+    grid: list[list[Any]],
+    boxes: list[dict[str, int]],
+    *,
+    merge_vertical_blocks: bool = False,
+) -> list[dict[str, int]]:
+    """Merge boxes with the same column span when separated only by empty rows.
+
+    Handles tables where row-groups (varieties, treatment levels) are separated
+    by single blank rows in the source sheet.  Stitching them back into one box
+    lets header/data extraction work correctly on the full table.
+    By default, an empty row inside the same column span is treated as a hard
+    block separator. Legacy vertical stitching can be restored explicitly with
+    `merge_vertical_blocks=True`.
+    """
+    if len(boxes) <= 1:
+        return boxes
+    if not merge_vertical_blocks:
+        return sorted(boxes, key=lambda b: (b["row_start"], b["col_start"]))
+
+    by_cols: dict[tuple[int, int], list[dict[str, int]]] = {}
+    for box in boxes:
+        key = (box["col_start"], box["col_end"])
+        by_cols.setdefault(key, []).append(box)
+
+    result: list[dict[str, int]] = []
+    for (col_start, col_end), group in by_cols.items():
+        group_sorted = sorted(group, key=lambda b: b["row_start"])
+        cur_start = group_sorted[0]["row_start"]
+        cur_end = group_sorted[0]["row_end"]
+
+        for next_box in group_sorted[1:]:
+            gap_start = cur_end + 1
+            gap_end = next_box["row_start"] - 1
+            gap_size = gap_end - gap_start + 1
+
+            if (
+                0 <= gap_size <= MAX_MERGE_GAP_ROWS
+                and _gap_rows_are_empty(grid, gap_start, gap_end, col_start, col_end)
+            ):
+                cur_end = next_box["row_end"]
+            else:
+                result.append(
+                    {
+                        "row_start": cur_start,
+                        "row_end": cur_end,
+                        "col_start": col_start,
+                        "col_end": col_end,
+                    }
+                )
+                cur_start = next_box["row_start"]
+                cur_end = next_box["row_end"]
+
+        result.append(
+            {
+                "row_start": cur_start,
+                "row_end": cur_end,
+                "col_start": col_start,
+                "col_end": col_end,
+            }
+        )
+
+    return sorted(result, key=lambda b: (b["row_start"], b["col_start"]))
+
+
 def _extract_cells(grid: list[list[Any]], box: dict[str, int]) -> list[list[Any]]:
     cells: list[list[Any]] = []
     for row_idx in range(box["row_start"], box["row_end"] + 1):
@@ -856,6 +932,7 @@ def detect_blocks_with_positions(
     min_data_rows: int = MIN_DATA_ROWS,
     min_block_cols: int = MIN_BLOCK_COLS,
     min_non_empty_cells: int = MIN_NONEMPTY_CELLS,
+    merge_vertical_blocks: bool = False,
 ) -> list[dict[str, Any]]:
     """Detect table blocks via BFS components with bridge-aware deterministic split refinement.
 
@@ -864,7 +941,8 @@ def detect_blocks_with_positions(
     component box is iteratively refined by selecting the lowest-cost vertical/horizontal cut band
     over the data region (rows after `HEADER_ROWS`) and splitting when both sides are dense but the
     cut band has very few non-empty cells. Soft separators are then applied, local connected
-    components are re-checked, and only overlapping boxes are merged.
+    components are re-checked, and only overlapping boxes are merged. Vertical stitching across
+    empty separator rows is opt-in via `merge_vertical_blocks=True`.
     """
     grid = _pad_rows(rows)
     if not grid or not grid[0]:
@@ -896,7 +974,13 @@ def detect_blocks_with_positions(
         )
     ]
 
-    merged = _merge_overlapping_boxes(filtered)
+    same_col_merged = _merge_same_column_span_boxes(
+        grid,
+        filtered,
+        merge_vertical_blocks=merge_vertical_blocks,
+    )
+
+    merged = _merge_overlapping_boxes(same_col_merged)
     merged.sort(key=lambda box: (box["row_start"], box["col_start"]))
 
     blocks: list[dict[str, Any]] = []
@@ -917,5 +1001,15 @@ def detect_blocks_with_positions(
     return blocks
 
 
-def detect_blocks(rows: list[list[Any]]) -> list[list[list[Any]]]:
-    return [block["rows"] for block in detect_blocks_with_positions(rows)]
+def detect_blocks(
+    rows: list[list[Any]],
+    *,
+    merge_vertical_blocks: bool = False,
+) -> list[list[list[Any]]]:
+    return [
+        block["rows"]
+        for block in detect_blocks_with_positions(
+            rows,
+            merge_vertical_blocks=merge_vertical_blocks,
+        )
+    ]

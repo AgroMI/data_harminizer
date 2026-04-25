@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { NavLink } from "./components/NavLink";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -22,28 +23,21 @@ export default function RootLayout({ children }: RootLayoutProps) {
           <div className="pointer-events-none absolute right-8 top-24 -z-10 h-64 w-64 rounded-full bg-coral-200/20 blur-3xl" />
 
           <div className="app-shell">
-            <header className="border-b border-white/70 px-5 py-4 sm:px-7">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="eyebrow">Thesis Demo</p>
-                  <Link href="/" className="text-lg font-semibold tracking-tight text-slate-900">
+            <header className="border-b border-slate-100/80 px-5 py-3 sm:px-7">
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="eyebrow text-[10px] leading-none">Thesis Demo</p>
+                  <Link href="/" className="text-[15px] font-semibold tracking-tight text-slate-900 hover:text-cyan-700">
                     Semantic Harmonization Workbench
                   </Link>
                 </div>
 
-                <nav className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
-                  <Link href="/" className="btn-ghost min-h-10 px-4">
-                    Home
-                  </Link>
-                  <Link href="/upload" className="btn-ghost min-h-10 px-4">
-                    Upload
-                  </Link>
-                  <Link href="/workspace" className="btn-ghost min-h-10 px-4">
-                    Workspace
-                  </Link>
-                  <Link href="/ai" className="btn-primary min-h-10 px-4">
-                    AI Query
-                  </Link>
+                <nav className="flex shrink-0 items-center gap-0.5">
+                  <NavLink href="/">Home</NavLink>
+                  <NavLink href="/upload">Upload</NavLink>
+                  <NavLink href="/uploads">Files</NavLink>
+                  <NavLink href="/workspace">Workspace</NavLink>
+                  <NavLink href="/ai">AI Query</NavLink>
                 </nav>
               </div>
             </header>

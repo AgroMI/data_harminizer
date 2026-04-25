@@ -16,7 +16,7 @@ import type {
   QueryMetadata,
   ValidationStatus
 } from "../lib/api_types";
-import { API_BASE, readOnlyText, readProblemDetail, toErrorMessage } from "../lib/client";
+import { API_BASE, formatNumber, readOnlyText, readProblemDetail, toErrorMessage } from "../lib/client";
 import { primaryWorkflowSteps } from "../lib/workflow";
 
 type WorkspaceFilters = {
@@ -40,6 +40,7 @@ const DEFAULT_COLUMNS = {
   variety: true,
   treatment: true,
   location: true,
+  replicate: true,
   validation_status: true
 };
 
@@ -348,6 +349,7 @@ function WorkspacePageContent() {
                       {visibleColumns.variety ? <th className="px-4 py-3 font-semibold">Variety</th> : null}
                       {visibleColumns.treatment ? <th className="px-4 py-3 font-semibold">Treatment</th> : null}
                       {visibleColumns.location ? <th className="px-4 py-3 font-semibold">Location</th> : null}
+                      {visibleColumns.replicate ? <th className="px-4 py-3 font-semibold">Replicate</th> : null}
                       {visibleColumns.validation_status ? <th className="px-4 py-3 font-semibold">Status</th> : null}
                     </tr>
                   </thead>
@@ -362,12 +364,13 @@ function WorkspacePageContent() {
                         {visibleColumns.variable ? <td className="px-4 py-3 font-medium text-slate-900">{readOnlyText(row.variable)}</td> : null}
                         {visibleColumns.normalized_value ? (
                           <td className="px-4 py-3">
-                            {row.normalized_value ?? row.value ?? "n/a"} {row.normalized_unit ?? row.unit ?? ""}
+                            {formatNumber(row.normalized_value ?? row.value)} {row.normalized_unit ?? row.unit ?? ""}
                           </td>
                         ) : null}
                         {visibleColumns.variety ? <td className="px-4 py-3">{readOnlyText(row.variety)}</td> : null}
                         {visibleColumns.treatment ? <td className="px-4 py-3">{readOnlyText(row.treatment)}</td> : null}
                         {visibleColumns.location ? <td className="px-4 py-3">{readOnlyText(row.location)}</td> : null}
+                        {visibleColumns.replicate ? <td className="px-4 py-3">{readOnlyText(row.replicate)}</td> : null}
                         {visibleColumns.validation_status ? <td className="px-4 py-3">{row.validation_status}</td> : null}
                       </tr>
                     ))}
@@ -389,14 +392,15 @@ function WorkspacePageContent() {
                 <Field label="Variety" value={readOnlyText(selectedRow.variety)} />
                 <Field label="Treatment" value={readOnlyText(selectedRow.treatment)} />
                 <Field label="Location" value={readOnlyText(selectedRow.location)} />
+                <Field label="Replicate" value={readOnlyText(selectedRow.replicate)} />
                 <Field label="Variable" value={readOnlyText(selectedRow.variable)} />
                 <Field
                   label="Source value"
-                  value={`${selectedRow.value ?? "n/a"} ${selectedRow.unit ?? ""}`.trim()}
+                  value={`${formatNumber(selectedRow.value)} ${selectedRow.unit ?? ""}`.trim()}
                 />
                 <Field
                   label="Normalized value"
-                  value={`${selectedRow.normalized_value ?? "n/a"} ${selectedRow.normalized_unit ?? ""}`.trim()}
+                  value={`${formatNumber(selectedRow.normalized_value)} ${selectedRow.normalized_unit ?? ""}`.trim()}
                 />
                 <Field label="Status" value={selectedRow.validation_status} />
                 <Field label="Lineage" value={`${selectedRow.source_sheet}:${selectedRow.source_row_index} · ${selectedRow.source_column}`} />

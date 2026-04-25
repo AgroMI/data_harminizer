@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from etl.types import CanonicalMeasure, CanonicalUnit, SupportedUnit
 
-SUPPORTED_UNITS: tuple[SupportedUnit, ...] = ("kg/ha", "t/ha", "%", "cm", "m")
+SUPPORTED_UNITS: tuple[SupportedUnit, ...] = ("kg/ha", "t/ha", "kg/parc", "%", "cm", "m")
 
 CANONICAL_UNIT_BY_MEASURE: dict[CanonicalMeasure, CanonicalUnit] = {
     "yield": "kg/ha",
@@ -11,7 +11,7 @@ CANONICAL_UNIT_BY_MEASURE: dict[CanonicalMeasure, CanonicalUnit] = {
 }
 
 SUPPORTED_UNITS_BY_MEASURE: dict[CanonicalMeasure, tuple[SupportedUnit, ...]] = {
-    "yield": ("kg/ha", "t/ha"),
+    "yield": ("kg/ha", "t/ha", "kg/parc"),
     "moisture": ("%",),
     "plant_height": ("cm", "m"),
 }
@@ -20,6 +20,7 @@ UNIT_TOKEN_MAP: dict[CanonicalMeasure, dict[SupportedUnit, tuple[str, ...]]] = {
     "yield": {
         "kg/ha": ("kg_ha", "kg/ha"),
         "t/ha": ("t_ha", "t/ha"),
+        "kg/parc": ("kg_parc", "kg/parc", "parc"),
     },
     "moisture": {
         "%": ("pct", "%", "percent"),
@@ -52,6 +53,8 @@ def normalize_supported_unit(value: str | None) -> SupportedUnit | None:
         "kg_ha": "kg/ha",
         "t/ha": "t/ha",
         "t_ha": "t/ha",
+        "kg/parc": "kg/parc",
+        "kg_parc": "kg/parc",
         "%": "%",
         "pct": "%",
         "percent": "%",
@@ -102,6 +105,8 @@ def normalize_measure_value(
             normalized_value = value
         elif unit == "t/ha":
             normalized_value = value * 1000.0
+        elif unit == "kg/parc":
+            raise ValueError("kg/parc cannot be normalized to kg/ha without known parcel area.")
         else:
             raise ValueError(f"Unsupported unit {unit} for yield.")
     elif measure == "moisture":

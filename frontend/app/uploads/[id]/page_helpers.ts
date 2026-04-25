@@ -20,7 +20,7 @@ const TARGET_UNIT_BY_MEASURE: Record<CanonicalMeasure, CanonicalUnit> = {
 };
 
 const SOURCE_UNIT_OPTIONS_BY_MEASURE: Record<CanonicalMeasure, SupportedUnit[]> = {
-  yield: ["kg/ha", "t/ha"],
+  yield: ["kg/ha", "t/ha", "kg/parc"],
   moisture: ["%"],
   plant_height: ["cm", "m"]
 };
@@ -61,6 +61,7 @@ export function blockWarningCount(block: PreviewBlock): number {
 
 export function extractEditPayload(preview: PreviewPayload | null): SaveEditsPayload {
   return {
+    year_override: preview?.year_override ?? null,
     columns:
       preview?.blocks.flatMap((block) =>
         block.type_suggestions.map((item) => ({
@@ -77,8 +78,10 @@ export function extractEditPayload(preview: PreviewPayload | null): SaveEditsPay
 }
 
 export function stableEditPayload(preview: PreviewPayload | null): SaveEditsPayload {
+  const base = extractEditPayload(preview);
   return {
-    columns: extractEditPayload(preview).columns
+    year_override: base.year_override,
+    columns: base.columns
       .map((item) => ({
         block_id: item.block_id,
         column: item.column,

@@ -78,7 +78,19 @@ def build_planner_messages(
                 "When a user asks for a measure by a dimension, and there is no explicit list-record wording, prefer a bounded aggregate interpretation. "
                 "For example, 'yield by variety' or semantically equivalent phrasing should normally become an average aggregation grouped by variety. "
                 "If a safe bounded interpretation is plausible, prefer propose_plan over reject. "
-                "Only use clarify or reject when no bounded canonical interpretation is defensible."
+                "Only use clarify or reject when no bounded canonical interpretation is defensible. "
+                "Supported filter operators: 'eq' (exact match), 'ilike' (case-insensitive substring match), 'gte', 'lte', 'in'. "
+                "Use 'ilike' when the user provides a variety, location, or treatment name that may be partially typed, misspelled, or abbreviated. "
+                "For the ilike value, use only the most distinctive token or suffix from the user's input — strip numbered prefixes, short abbreviations (Mv, Gk, etc.) and articles. "
+                "For example: 'My Toborzó' → use 'Toborzó' (matches '1. Mv Toborzó'); 'Mv Pálma' → use 'Pálma'; '2. Gk Öthalom' → use 'Öthalom'. "
+                "Check available_varieties_sample, available_locations_sample, available_treatments_sample in the schema to identify the best distinctive token. "
+                "For queries asking for the lowest, minimum, highest, or maximum individual record ('where was the lowest yield', 'which plot had the highest value'), use intent 'select_records' with ordering by 'normalized_value' asc (for lowest) or desc (for highest) and limit 1. "
+                "Ordering field 'normalized_value' is valid for record queries; 'metric_value' is valid for aggregate queries. "
+                "The only valid canonical measures are: yield, moisture, plant_height. Never put column names, field names, or other strings in selected_measures. "
+                "For questions about available units, measures, dimensions, variables, or other schema metadata (e.g. 'What units are used?', 'What variables exist?', 'What can I query?'), "
+                "use decision 'reject' and answer the question directly in notes using the values from schema_snapshot.query_metadata "
+                "(available_normalized_units, available_variables, available_varieties_sample, supported_filters, etc.). "
+                "Do not try to create a query_plan for pure schema/metadata questions — the answer is already in the schema_snapshot."
             ),
         },
         {

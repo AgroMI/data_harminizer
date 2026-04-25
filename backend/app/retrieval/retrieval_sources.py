@@ -19,6 +19,7 @@ CANONICAL_DIMENSION_DESCRIPTIONS: dict[str, str] = {
     "variety": "Canonical variety or cultivar dimension for grouping and filtering.",
     "treatment": "Canonical treatment dimension for fertilizer or management variants.",
     "location": "Canonical location or site dimension for field-level grouping.",
+    "replicate": "Canonical replicate or block dimension for experimental design.",
 }
 
 CANONICAL_MEASURE_DESCRIPTIONS: dict[str, str] = {

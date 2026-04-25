@@ -1,3 +1,17 @@
+export type UploadListItem = {
+  id: string;
+  status: string;
+  original_filename: string;
+  file_size_bytes: number | null;
+  sheet_count: number;
+  uploaded_at: string | null;
+};
+
+export type UploadListResponse = {
+  count: number;
+  uploads: UploadListItem[];
+};
+
 export type CanonicalMeasure = "yield" | "moisture" | "plant_height";
 export type CanonicalUnit = "kg/ha" | "%" | "cm";
 export type ValidationStatus = "valid" | "warning" | "invalid";
@@ -18,7 +32,8 @@ export type HarmonizedObservation = {
   variety: string | null;
   treatment: string | null;
   location: string | null;
-  variable: CanonicalMeasure | null;
+  replicate: string | null;
+  variable: string | null;
   value: number | null;
   unit: string | null;
   normalized_value: number | null;
@@ -56,7 +71,7 @@ export type QueryMetadata = {
   supported_metrics: AggregationMetric[];
   supported_validation_statuses: ValidationStatus[];
   supported_quality_flags: QualityFlag[];
-  available_variables: CanonicalMeasure[];
+  available_variables: string[];
   available_normalized_units: CanonicalUnit[];
   available_varieties: string[];
   available_locations: string[];

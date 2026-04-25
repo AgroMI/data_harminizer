@@ -3,61 +3,38 @@ import Link from "next/link";
 import { WorkflowStepper } from "./components/WorkflowStepper";
 import { primaryWorkflowSteps } from "./lib/workflow";
 
-const featureCards = [
-  {
-    title: "Workflow first",
-    body: "The main interface follows a clear path from upload to committed data and AI-assisted querying."
-  },
-  {
-    title: "Advanced details on demand",
-    body: "Technical outputs such as SQL, audit trace and MCP tool payloads stay secondary instead of flooding the primary UI."
-  },
-  {
-    title: "Production-leaning structure",
-    body: "Loading, empty and error states are explicit, primary actions are obvious, and the main routes are intentionally small."
-  }
-];
-
 export default function HomePage() {
   return (
-    <div className="grid gap-6">
-      <section className="surface-card px-6 py-8 sm:px-8 sm:py-10">
-        <div className="space-y-6">
+    <div className="space-y-5">
+      <section className="surface-card px-8 py-12 sm:py-16">
+        <div className="max-w-xl space-y-5">
           <div className="space-y-3">
             <p className="eyebrow">Agrarian Data Workflow</p>
-            <h1 className="max-w-4xl text-balance text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-              Upload, validate, commit, browse, ask.
+            <h1 className="text-5xl font-semibold leading-[1.1] tracking-tight text-slate-950">
+              From spreadsheet<br />to structured data.
             </h1>
-            <p className="max-w-3xl text-base leading-7 text-slate-600 sm:text-lg">
-              The frontend is now organized around the actual user workflow instead of the internal demo surfaces.
-              Use the clean path for normal work, and open the AI screen only when you want natural language querying or advanced technical details.
+            <p className="text-base leading-7 text-slate-600">
+              Upload an Excel workbook, review and map the columns, commit to a harmonized agrarian dataset, then query it with natural language.
             </p>
           </div>
 
-          <WorkflowStepper steps={primaryWorkflowSteps()} activeKey="upload" />
-
           <div className="flex flex-wrap gap-3">
-            <Link href="/upload" className="btn-primary px-6">
+            <Link href="/upload" className="btn-primary px-7">
               Start upload
             </Link>
-            <Link href="/workspace" className="btn-ghost px-6">
-              Browse harmonized data
+            <Link href="/workspace" className="btn-ghost px-7">
+              Browse data
             </Link>
-            <Link href="/ai" className="btn-ghost px-6">
-              Open AI query
+            <Link href="/ai" className="btn-ghost px-7">
+              AI query
             </Link>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-3">
-        {featureCards.map((card) => (
-          <article key={card.title} className="surface-card px-6 py-6">
-            <p className="eyebrow">Why this matters</p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">{card.title}</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-600">{card.body}</p>
-          </article>
-        ))}
+      <section className="surface-card px-6 py-6 sm:px-8">
+        <p className="eyebrow mb-4">Workflow</p>
+        <WorkflowStepper steps={primaryWorkflowSteps()} activeKey="upload" />
       </section>
     </div>
   );

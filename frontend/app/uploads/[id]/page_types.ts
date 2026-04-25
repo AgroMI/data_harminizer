@@ -1,8 +1,8 @@
 export type ColumnType = "text" | "numeric" | "date";
 export type SemanticRole = "ignore" | "date" | "dimension" | "measure";
-export type CanonicalDimension = "plot_id" | "variety" | "treatment" | "location";
+export type CanonicalDimension = "plot_id" | "variety" | "treatment" | "location" | "replicate";
 export type CanonicalMeasure = "yield" | "moisture" | "plant_height";
-export type SupportedUnit = "kg/ha" | "t/ha" | "%" | "cm" | "m";
+export type SupportedUnit = "kg/ha" | "t/ha" | "kg/parc" | "%" | "cm" | "m";
 export type CanonicalUnit = "kg/ha" | "%" | "cm";
 export type ValidationStatus = "valid" | "warning" | "invalid";
 export type ColumnWarning = "ambiguous_type" | "annotation_like" | "date_parse_issue" | "high_missing";
@@ -46,12 +46,14 @@ export type PreviewBlock = {
   missing_by_column: MissingByColumnItem[];
   type_suggestions: ColumnSuggestion[];
   date_issues: DateIssueItem[];
+  inferred_year: number | null;
 };
 
 export type PreviewPayload = {
   file_name: string;
   block_count: number;
   blocks: PreviewBlock[];
+  year_override: number | null;
 };
 
 export type SheetManifestItem = {
@@ -84,6 +86,7 @@ export type UploadPreviewResponse = {
 };
 
 export type SaveEditsPayload = {
+  year_override: number | null;
   columns: Array<{
     block_id: string;
     column: string;

@@ -9,7 +9,7 @@ from etl.types import CanonicalDimension, CanonicalMeasure, CanonicalUnit
 
 TextToSqlPlanStatus = Literal["supported", "unsupported", "clarification_required"]
 TextToSqlIntent = Literal["select_records", "aggregate", "unsupported", "clarification_required"]
-QueryFilterOperator = Literal["eq", "gte", "lte", "in"]
+QueryFilterOperator = Literal["eq", "ilike", "gte", "lte", "in"]
 AggregationFunction = Literal["avg", "count"]
 OrderingDirection = Literal["asc", "desc"]
 UnitHandlingMode = Literal["canonical_normalized", "none"]

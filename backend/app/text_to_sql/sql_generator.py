@@ -19,7 +19,11 @@ def _generate_record_sql(plan: QueryPlan) -> GeneratedSql:
     sql = f"SELECT {projection} FROM {SAFE_RELATION_NAME}"
     if where_clauses:
         sql = f"{sql} WHERE {' AND '.join(where_clauses)}"
-    sql = f"{sql} ORDER BY observation_date NULLS LAST, variable ASC, plot_id NULLS LAST LIMIT %s"
+    if plan.ordering:
+        order_sql = _build_order_by(plan)
+    else:
+        order_sql = "observation_date NULLS LAST, variable ASC, plot_id NULLS LAST"
+    sql = f"{sql} ORDER BY {order_sql} LIMIT %s"
     parameters.append(plan.limit)
     return GeneratedSql(
         sql=sql,
@@ -74,6 +78,10 @@ def _build_where_clauses(plan: QueryPlan) -> tuple[list[str], list[object]]:
         if filter_item.operator == "eq":
             where_clauses.append(f"{filter_item.field_name} = %s")
             parameters.append(filter_item.value)
+        elif filter_item.operator == "ilike":
+            pattern = filter_item.value if "%" in str(filter_item.value) else f"%{filter_item.value}%"
+            where_clauses.append(f"{filter_item.field_name} ILIKE %s")
+            parameters.append(pattern)
         elif filter_item.operator == "gte":
             where_clauses.append(f"{filter_item.field_name} >= %s")
             parameters.append(filter_item.value)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+import re
 from typing import Any
 
 from fastapi import HTTPException
@@ -29,10 +30,15 @@ from backend.app.services.uploads.preview_service import (
     fetch_preview,
     validate_preview_semantics,
 )
-from etl.preview_schema import extract_table_details_from_preview_block
+from etl.preview_schema import (
+    classify_block_semantics,
+    extract_table_details_from_preview_block,
+)
 from etl.quality_validation import validate_observation_records
 from etl.type_inference import parse_date_value, to_numeric_value
 from etl.unit_harmonization import normalize_measure_value
+
+_N_LEVEL_SOURCE_COLUMN_PATTERN = re.compile(r"^(n_\d+)(?:_([a-z0-9]+))?$", re.IGNORECASE)
 
 DELETE_HARMONIZED_SQL = "DELETE FROM harmonized.observations WHERE upload_session_id = %s"
 DELETE_STAGING_SQL = "DELETE FROM staging.observations WHERE upload_session_id = %s"
@@ -128,10 +134,12 @@ def commit_upload_session(upload_id: str) -> CommitResult:
         try:
             with conn.cursor() as cur:
                 preview_json, blocks = prepare_commit_blocks(cur, upload_id)
+                year_override = preview_json.get("year_override") if isinstance(preview_json.get("year_override"), int) else None
                 staging_rows, harmonized_rows = rebuild_harmonized_rows(
                     conn,
                     upload_id=upload_id,
                     blocks=blocks,
+                    year_override=year_override,
                 )
                 cur.execute(UPDATE_UPLOAD_STATUS_SQL, (UPLOAD_STATUS_COMMITTED, upload_id))
 
@@ -152,11 +160,41 @@ def commit_upload_session(upload_id: str) -> CommitResult:
     )
 
 
+def _validate_year_availability(*, blocks: list[PreviewBlock], year_override: int | None) -> None:
+    for block in blocks:
+        block_id = str(block.get("block_id") or DEFAULT_BLOCK_ID)
+        suggestions = block.get("type_suggestions", [])
+        has_date_column = any(
+            isinstance(item, dict) and item.get("semantic_role") == "date"
+            for item in suggestions
+        )
+        if has_date_column:
+            continue
+        block_inferred_year = block.get("inferred_year")
+        effective_year = (
+            year_override
+            if isinstance(year_override, int)
+            else (int(block_inferred_year) if isinstance(block_inferred_year, int) else None)
+        )
+        if effective_year is None:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Block {block_id} has no date column and no observation year could be "
+                    f"determined from the document or filename. "
+                    f"Set a year override before committing."
+                ),
+            )
+
+
 def prepare_commit_blocks(cur: Any, upload_id: str) -> tuple[PreviewPayload, list[PreviewBlock]]:
     preview_json = fetch_preview(cur, upload_id, for_update=True)
     ensure_preview_mapping_defaults(preview_json)
     validate_preview_semantics(preview_json)
-    return preview_json, extract_blocks(preview_json)
+    blocks = extract_blocks(preview_json)
+    year_override = preview_json.get("year_override") if isinstance(preview_json.get("year_override"), int) else None
+    _validate_year_availability(blocks=blocks, year_override=year_override)
+    return preview_json, blocks
 
 
 def rebuild_harmonized_rows(
@@ -164,8 +202,9 @@ def rebuild_harmonized_rows(
     *,
     upload_id: str,
     blocks: list[PreviewBlock],
+    year_override: int | None = None,
 ) -> tuple[int, int]:
-    prepared_rows = build_all_staging_rows(upload_id=upload_id, blocks=blocks)
+    prepared_rows = build_all_staging_rows(upload_id=upload_id, blocks=blocks, year_override=year_override)
     validate_observation_records(prepared_rows)
     insert_rows = [record_to_staging_insert_row(record) for record in prepared_rows]
 
@@ -198,14 +237,20 @@ def build_all_staging_rows(
     *,
     upload_id: str,
     blocks: list[PreviewBlock],
+    year_override: int | None = None,
 ) -> list[PreparedObservationRow]:
     prepared_rows: list[PreparedObservationRow] = []
     for block in blocks:
-        prepared_rows.extend(build_staging_rows(upload_id=upload_id, block=block))
+        prepared_rows.extend(build_staging_rows(upload_id=upload_id, block=block, year_override=year_override))
     return prepared_rows
 
 
-def build_staging_rows(*, upload_id: str, block: PreviewBlock) -> list[PreparedObservationRow]:
+def build_staging_rows(*, upload_id: str, block: PreviewBlock, year_override: int | None = None) -> list[PreparedObservationRow]:
+    block_plan = classify_block_semantics(block)
+    block.update(block_plan)
+    if block_plan["commit_decision"] == "skip_summary_block":
+        return []
+
     table = extract_table_details_from_preview_block(block)
     headers = table["headers"]
     data_rows = table["data_rows"]
@@ -216,7 +261,7 @@ def build_staging_rows(*, upload_id: str, block: PreviewBlock) -> list[PreparedO
     if not measure_columns:
         return []
 
-    block_context = build_block_context(block=block, table=table, date_column=date_column)
+    block_context = build_block_context(block=block, table=table, date_column=date_column, year_override=year_override)
     insert_rows: list[PreparedObservationRow] = []
     for source_row_index, data_row in iter_block_data_rows(block=block, table=table):
         insert_rows.extend(
@@ -259,17 +304,25 @@ def build_block_context(
     block: PreviewBlock,
     table: dict[str, Any],
     date_column: str | None,
+    year_override: int | None = None,
 ) -> dict[str, Any]:
     block_id = str(block.get("block_id") or DEFAULT_BLOCK_ID)
     source_sheet = str(block.get("sheet") or DEFAULT_SOURCE_SHEET)
     data_row_start_index = table.get("data_row_start_index")
     if not isinstance(data_row_start_index, int) or data_row_start_index < 0:
         data_row_start_index = 1 if table["header_in_first_row"] else 0
+    block_inferred_year = block.get("inferred_year")
+    effective_year = (
+        year_override
+        if isinstance(year_override, int)
+        else (int(block_inferred_year) if isinstance(block_inferred_year, int) else None)
+    )
     return {
         "block": block,
         "block_id": block_id,
         "source_sheet": source_sheet,
         "date_column": date_column,
+        "effective_year": effective_year,
         "block_row_start": int(block.get("row_start") or 1),
         "data_row_start_index": data_row_start_index,
         "requires_observation_date": date_column is not None,
@@ -301,7 +354,11 @@ def build_data_row_observations(
     source_row_index: int,
     measure_columns: list[dict[str, Any]],
 ) -> list[PreparedObservationRow]:
-    observation_date = parse_observation_date(data_row, block_context["date_column"])
+    observation_date = parse_observation_date(
+        data_row,
+        block_context["date_column"],
+        effective_year=block_context.get("effective_year"),
+    )
     dimension_values = canonical_dimension_payload(block_context["block"], data_row)
     dimensions_json = {key: value for key, value in dimension_values.items() if value is not None}
 
@@ -322,10 +379,20 @@ def build_data_row_observations(
     return rows
 
 
-def parse_observation_date(data_row: dict[str, Any], date_column: str | None) -> date | None:
-    if date_column is None:
-        return None
-    return parse_date_value(data_row.get(date_column))
+def parse_observation_date(
+    data_row: dict[str, Any],
+    date_column: str | None,
+    *,
+    effective_year: int | None = None,
+) -> date | None:
+    if date_column is not None:
+        row_date = parse_date_value(data_row.get(date_column))
+        if row_date is not None:
+            return row_date
+        # Row has a date column but this cell is missing — fall through to year fallback
+    if effective_year is not None:
+        return date(effective_year, 1, 1)
+    return None
 
 
 def build_measure_observation(
@@ -340,10 +407,33 @@ def build_measure_observation(
     measure: dict[str, Any],
 ) -> PreparedObservationRow | None:
     canonical_measure = normalize_canonical_measure(measure.get("canonical_measure"))
-    if canonical_measure is None:
-        return None
-
     column = str(measure.get("column"))
+    measure_metadata = parse_measure_column_metadata(column=column, canonical_measure=canonical_measure)
+
+    # When canonical_measure is not mapped, fall back to the raw column name as variable.
+    # The observation is still committed so no data is lost; normalization is skipped.
+    variable: str = (
+        canonical_measure
+        if canonical_measure is not None
+        else str(measure_metadata.get("meaning") or column)
+    )
+    treatment = (
+        dimension_values["treatment"]
+        if dimension_values["treatment"] is not None
+        else dimension_text_value(measure_metadata.get("treatment"))
+    )
+    record_dimensions_json = dict(dimensions_json)
+    record_dimensions_json.setdefault("raw_measure_name", column)
+    if measure_metadata.get("meaning") is not None:
+        record_dimensions_json.setdefault("meaning", measure_metadata["meaning"])
+    if measure_metadata.get("treatment") is not None:
+        record_dimensions_json.setdefault("treatment", measure_metadata["treatment"])
+    if measure_metadata.get("replicate_column_code") is not None:
+        record_dimensions_json.setdefault(
+            "replicate_column_code",
+            measure_metadata["replicate_column_code"],
+        )
+
     numeric_value, unit, normalized_value, normalized_unit = normalize_measure_observation(
         data_row=data_row,
         column=column,
@@ -360,14 +450,14 @@ def build_measure_observation(
         "observation_date": observation_date,
         "plot_id": dimension_values["plot_id"],
         "variety": dimension_values["variety"],
-        "treatment": dimension_values["treatment"],
+        "treatment": treatment,
         "location": dimension_values["location"],
-        "variable": canonical_measure,
+        "variable": variable,
         "value": numeric_value,
         "unit": unit,
         "normalized_value": normalized_value,
         "normalized_unit": normalized_unit,
-        "dimensions_json": dimensions_json,
+        "dimensions_json": record_dimensions_json,
         "validation_status": "valid",
         "quality_flags": [],
         "_requires_observation_date": block_context["requires_observation_date"],
@@ -378,25 +468,28 @@ def normalize_measure_observation(
     *,
     data_row: dict[str, Any],
     column: str,
-    canonical_measure: str,
+    canonical_measure: str | None,
     measure: dict[str, Any],
 ) -> tuple[float | None, str | None, float | None, str | None]:
     numeric_value = to_numeric_value(data_row.get(column))
     unit = normalize_supported_unit_value(measure.get("unit"))
-    if numeric_value is None or unit is None:
+    if numeric_value is None or unit is None or canonical_measure is None:
         return numeric_value, unit, None, None
 
-    normalized_measure = normalize_measure_value(
-        measure=canonical_measure,
-        value=numeric_value,
-        unit=unit,
-    )
-    return (
-        numeric_value,
-        unit,
-        normalized_measure.normalized_value,
-        normalized_measure.normalized_unit,
-    )
+    try:
+        normalized_measure = normalize_measure_value(
+            measure=canonical_measure,
+            value=numeric_value,
+            unit=unit,
+        )
+        return (
+            numeric_value,
+            unit,
+            normalized_measure.normalized_value,
+            normalized_measure.normalized_unit,
+        )
+    except ValueError:
+        return numeric_value, unit, None, None
 
 
 def canonical_dimension_payload(
@@ -408,6 +501,7 @@ def canonical_dimension_payload(
         "variety": None,
         "treatment": None,
         "location": None,
+        "replicate": None,
     }
     suggestions = block.get("type_suggestions", [])
     if not isinstance(suggestions, list):
@@ -423,15 +517,37 @@ def canonical_dimension_payload(
             continue
 
         canonical_dimension = normalize_canonical_dimension(item.get("canonical_dimension"))
-        if canonical_dimension is None:
-            continue
-
         value = dimension_text_value(data_row.get(column))
         if value is None:
             continue
-        payload[canonical_dimension] = value
+
+        if canonical_dimension is not None:
+            payload[canonical_dimension] = value
+        else:
+            # No canonical mapping — store under the raw column name in dimensions_json
+            payload[column] = value
 
     return payload
+
+
+def parse_measure_column_metadata(
+    *,
+    column: str,
+    canonical_measure: str | None,
+) -> dict[str, str | None]:
+    metadata: dict[str, str | None] = {
+        "meaning": canonical_measure,
+        "treatment": None,
+        "replicate_column_code": None,
+    }
+    match = _N_LEVEL_SOURCE_COLUMN_PATTERN.match(column.strip().lower())
+    if match is None:
+        return metadata
+
+    metadata["meaning"] = canonical_measure or "yield"
+    metadata["treatment"] = match.group(1)
+    metadata["replicate_column_code"] = match.group(2)
+    return metadata
 
 
 def record_to_staging_insert_row(record: PreparedObservationRow) -> StagingInsertRow:

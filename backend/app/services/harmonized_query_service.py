@@ -10,7 +10,7 @@ from psycopg.types.json import Jsonb
 from backend.app.db import get_conn
 from backend.app.schemas import AggregationGroupBy, AggregationMetric
 from etl.semantic_mapping import CANONICAL_MEASURES
-from etl.types import CanonicalMeasure, CanonicalUnit, QualityFlag, ValidationStatus
+from etl.types import CanonicalUnit, QualityFlag, ValidationStatus
 
 LIST_HARMONIZED_OBSERVATIONS_SQL = """
 SELECT
@@ -20,6 +20,7 @@ SELECT
     variety,
     treatment,
     location,
+    dimensions_json->>'replicate' AS replicate,
     variable,
     value::double precision AS value,
     unit,
@@ -137,7 +138,7 @@ SUPPORTED_QUALITY_FLAGS: tuple[QualityFlag, ...] = (
 @dataclass(frozen=True, slots=True)
 class HarmonizedObservationFilters:
     upload_session_id: str | None = None
-    variable: CanonicalMeasure | None = None
+    variable: str | None = None
     variety: str | None = None
     location: str | None = None
     treatment: str | None = None

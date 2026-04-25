@@ -130,7 +130,7 @@ def validate_llm_query_plan(plan: QueryPlan) -> list[str]:
         if item not in SAFE_GROUP_FIELDS:
             errors.append(f"Unsupported selected dimension in LLM plan: {item}.")
     for item in plan.ordering:
-        if item.field_name not in {*SAFE_GROUP_FIELDS, "observation_date", "variable", "metric_value"}:
+        if item.field_name not in {*SAFE_GROUP_FIELDS, "observation_date", "variable", "metric_value", "normalized_value", "value"}:
             errors.append(f"Unsupported ordering field in LLM plan: {item.field_name}.")
     for item in plan.aggregations:
         if item.function == "avg" and item.field_name != "normalized_value":
@@ -292,6 +292,11 @@ def _normalize_llm_payload(*, payload: Any, model_type: Any) -> Any:
         normalized = dict(payload)
         if isinstance(normalized.get("notes"), str):
             normalized["notes"] = [normalized["notes"]]
+        confidence = normalized.get("confidence")
+        if isinstance(confidence, str):
+            normalized["confidence"] = {"high": 0.9, "medium": 0.7, "low": 0.5}.get(confidence.casefold(), 0.5)
+        elif isinstance(confidence, (int, float)):
+            normalized["confidence"] = max(0.0, min(1.0, float(confidence)))
         query_plan = normalized.get("query_plan")
         if isinstance(query_plan, dict):
             normalized["query_plan"] = _normalize_query_plan_payload(query_plan)
@@ -308,10 +313,18 @@ def _normalize_llm_payload(*, payload: Any, model_type: Any) -> Any:
     return payload
 
 
+_VALID_CANONICAL_MEASURES = {"yield", "moisture", "plant_height"}
+
+
 def _normalize_query_plan_payload(query_plan: dict[str, Any]) -> dict[str, Any]:
     normalized = dict(query_plan)
+    raw_selected = normalized.get("selected_measures")
+    if isinstance(raw_selected, list):
+        normalized["selected_measures"] = [m for m in raw_selected if m in _VALID_CANONICAL_MEASURES]
     selected_measures = normalized.get("selected_measures")
     target_measure = selected_measures[0] if isinstance(selected_measures, list) and selected_measures else normalized.get("target_measure")
+    if isinstance(target_measure, str) and target_measure not in _VALID_CANONICAL_MEASURES:
+        target_measure = None
 
     if normalized.get("status") == "proposed":
         normalized["status"] = "supported"
@@ -355,9 +368,15 @@ def _normalize_query_plan_payload(query_plan: dict[str, Any]) -> dict[str, Any]:
         normalized["ambiguity_flags"] = [normalized["ambiguity_flags"]]
 
     filters = list(normalized.get("filters", []))
+    if normalized.get("intent") == "select_records":
+        filters = [f for f in filters if not (isinstance(f, dict) and f.get("field_name") == "normalized_unit")]
     if target_measure and not any(item.get("field_name") == "variable" for item in filters if isinstance(item, dict)):
         filters.append({"field_name": "variable", "operator": "eq", "value": target_measure, "source_text": target_measure})
-    if target_measure and not any(item.get("field_name") == "normalized_unit" for item in filters if isinstance(item, dict)):
+    if (
+        target_measure
+        and normalized.get("intent") != "select_records"
+        and not any(item.get("field_name") == "normalized_unit" for item in filters if isinstance(item, dict))
+    ):
         filters.append(
             {
                 "field_name": "normalized_unit",

@@ -5,9 +5,9 @@ from typing import Any, Literal, TypedDict
 
 ColumnType = Literal["text", "numeric", "date"]
 SemanticRole = Literal["ignore", "date", "dimension", "measure"]
-CanonicalDimension = Literal["plot_id", "variety", "treatment", "location"]
+CanonicalDimension = Literal["plot_id", "variety", "treatment", "location", "replicate"]
 CanonicalMeasure = Literal["yield", "moisture", "plant_height"]
-SupportedUnit = Literal["kg/ha", "t/ha", "%", "cm", "m"]
+SupportedUnit = Literal["kg/ha", "t/ha", "kg/parc", "%", "cm", "m"]
 CanonicalUnit = Literal["kg/ha", "%", "cm"]
 ValidationStatus = Literal["valid", "warning", "invalid"]
 QualityFlag = Literal[
@@ -84,6 +84,8 @@ class ExtractedTable(TypedDict):
     header_in_first_row: bool
     header_row_count: int
     data_row_start_index: int
+    inferred_unit: str | None
+    inferred_year: int | None
 
 
 class PublicPreviewBlock(TypedDict):
@@ -101,6 +103,7 @@ class PublicPreviewBlock(TypedDict):
     missing_by_column: list[MissingByColumnItem]
     type_suggestions: list[TypeSuggestionItem]
     date_issues: list[DateIssueItem]
+    inferred_year: int | None
 
 
 class PreviewBlock(PublicPreviewBlock):
@@ -111,12 +114,14 @@ class PublicPreviewPayload(TypedDict):
     file_name: str
     block_count: int
     blocks: list[PublicPreviewBlock]
+    year_override: int | None
 
 
 class PreviewPayload(TypedDict):
     file_name: str
     block_count: int
     blocks: list[PreviewBlock]
+    year_override: int | None
 
 
 class ParsedUploadSource(TypedDict):

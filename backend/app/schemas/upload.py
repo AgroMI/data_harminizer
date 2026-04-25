@@ -45,23 +45,18 @@ class ColumnEditItem(BaseModel):
     @model_validator(mode="after")
     def validate_role_specific_fields(self) -> "ColumnEditItem":
         if self.semantic_role == "measure":
-            if self.canonical_measure is None:
-                allowed = ", ".join(CANONICAL_MEASURES)
-                raise ValueError(f"canonical_measure is required for measure columns. Supported values: {allowed}.")
             if self.canonical_dimension is not None:
                 raise ValueError("canonical_dimension is only allowed for dimension columns.")
-            if self.unit is None:
-                raise ValueError("unit is required for measure columns.")
-            if not is_supported_unit_for_measure(self.canonical_measure, self.unit):
-                raise ValueError(
-                    f"unit {self.unit!r} is not supported for {self.canonical_measure}."
-                )
+            # canonical_measure and unit are optional — missing means the column will be
+            # committed as raw (variable = column name) without unit normalisation.
+            if self.canonical_measure is not None and self.unit is not None:
+                if not is_supported_unit_for_measure(self.canonical_measure, self.unit):
+                    raise ValueError(
+                        f"unit {self.unit!r} is not supported for {self.canonical_measure}."
+                    )
         elif self.semantic_role == "dimension":
-            if self.canonical_dimension is None:
-                allowed = ", ".join(CANONICAL_DIMENSIONS)
-                raise ValueError(
-                    f"canonical_dimension is required for dimension columns. Supported values: {allowed}."
-                )
+            # canonical_dimension is optional — missing means it will be stored under
+            # the raw column name in dimensions_json.
             if self.canonical_measure is not None:
                 raise ValueError("canonical_measure is only allowed for measure columns.")
             if self.unit is not None:
@@ -80,6 +75,7 @@ class ColumnEditItem(BaseModel):
 class EditRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    year_override: int | None = Field(None, ge=1900, le=2100)
     columns: list[ColumnEditItem] = Field(default_factory=list)
 
 
@@ -136,3 +132,17 @@ class CommitResponse(BaseModel):
     status: Literal["committed"]
     staging_rows: int = Field(ge=0)
     harmonized_rows: int = Field(ge=0)
+
+
+class UploadListItem(BaseModel):
+    id: str
+    status: UploadStatus
+    original_filename: str
+    file_size_bytes: int | None = None
+    sheet_count: int = 0
+    uploaded_at: datetime | None = None
+
+
+class UploadListResponse(BaseModel):
+    count: int
+    uploads: list[UploadListItem]

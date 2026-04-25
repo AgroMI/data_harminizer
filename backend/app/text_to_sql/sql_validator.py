@@ -37,6 +37,8 @@ SQL_KEYWORDS: set[str] = {
     "count",
     "max",
     "in",
+    "ilike",
+    "like",
     "safe",
     "harmonized_observations_v1",
     "group_value",

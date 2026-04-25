@@ -39,7 +39,13 @@ WHERE id = %s
 """
 
 
-def apply_preview_edits(upload_id: str, edits: list[ColumnEditInput]) -> dict[str, Any]:
+def apply_preview_edits(
+    upload_id: str,
+    edits: list[ColumnEditInput],
+    *,
+    year_override: int | None = None,
+    year_override_provided: bool = False,
+) -> dict[str, Any]:
     edit_index = build_edit_index(edits)
 
     with get_conn() as conn:
@@ -47,6 +53,8 @@ def apply_preview_edits(upload_id: str, edits: list[ColumnEditInput]) -> dict[st
             preview_json = fetch_preview(cur, upload_id, for_update=True)
             ensure_preview_mapping_defaults(preview_json)
             apply_column_edits(preview_json, edit_index)
+            if year_override_provided:
+                preview_json["year_override"] = year_override
             ensure_preview_mapping_defaults(preview_json)
             validate_preview_semantics(preview_json)
             cur.execute(UPDATE_PREVIEW_SQL, (Json(preview_json), upload_id))
@@ -236,26 +244,12 @@ def validate_measure_semantics(
             status_code=422,
             detail=f"Measure column {column} in block {block_id} must resolve to numeric type.",
         )
-    if canonical_measure is None:
-        supported = ", ".join(CANONICAL_MEASURES)
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                f"Measure column {column} in block {block_id} must select a supported canonical_measure "
-                f"({supported})."
-            ),
-        )
     if canonical_dimension is not None:
         raise HTTPException(
             status_code=422,
             detail=f"canonical_dimension is not allowed for measure column {column} in block {block_id}.",
         )
-    if unit is None:
-        raise HTTPException(
-            status_code=422,
-            detail=f"Measure column {column} in block {block_id} must select a supported source unit.",
-        )
-    if not is_supported_unit_for_measure(canonical_measure, unit):
+    if canonical_measure is not None and unit is not None and not is_supported_unit_for_measure(canonical_measure, unit):
         raise HTTPException(
             status_code=422,
             detail=(
@@ -294,15 +288,6 @@ def validate_dimension_semantics(
     canonical_dimension: str | None,
     unit: str | None,
 ) -> None:
-    if canonical_dimension is None:
-        supported = ", ".join(CANONICAL_DIMENSIONS)
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                f"Dimension column {column} in block {block_id} must select a supported "
-                f"canonical_dimension ({supported})."
-            ),
-        )
     if canonical_measure is not None or unit is not None:
         raise HTTPException(
             status_code=422,

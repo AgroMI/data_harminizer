@@ -5,6 +5,7 @@ from backend.app.services.uploads.session_service import (
     create_upload_session,
     get_upload_preview,
     get_upload_session,
+    list_upload_sessions,
 )
 
 __all__ = [
@@ -14,4 +15,5 @@ __all__ = [
     "create_upload_session",
     "get_upload_preview",
     "get_upload_session",
+    "list_upload_sessions",
 ]

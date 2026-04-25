@@ -14,12 +14,36 @@ def _normalize_row(row: tuple[Any, ...] | list[Any]) -> list[Any]:
     return list(row)
 
 
+def _apply_merged_ranges(
+    rows: list[list[Any]],
+    merged_ranges: list[tuple[int, int, int, int]],
+) -> None:
+    """Propagate top-left value across each merged range (in-place).
+
+    merged_ranges entries: (row_start, row_end_excl, col_start, col_end_excl), 0-indexed.
+    """
+    for row_start, row_end_excl, col_start, col_end_excl in merged_ranges:
+        if row_start >= len(rows):
+            continue
+        top_row = rows[row_start]
+        top_val = top_row[col_start] if col_start < len(top_row) else None
+        for ri in range(row_start, min(row_end_excl, len(rows))):
+            for ci in range(col_start, col_end_excl):
+                if ci < len(rows[ri]):
+                    rows[ri][ci] = top_val
+
+
 def _read_workbook_openpyxl(file_bytes: bytes) -> list[WorkbookSheet]:
     workbook = load_workbook(filename=BytesIO(file_bytes), data_only=True)
     sheets: list[WorkbookSheet] = []
 
     for sheet_index, worksheet in enumerate(workbook.worksheets, start=1):
         rows = [_normalize_row(row) for row in worksheet.iter_rows(values_only=True)]
+        merged_ranges = [
+            (r.min_row - 1, r.max_row, r.min_col - 1, r.max_col)
+            for r in worksheet.merged_cells.ranges
+        ]
+        _apply_merged_ranges(rows, merged_ranges)
         sheets.append(
             {
                 "sheet_index": sheet_index,
@@ -57,6 +81,10 @@ def _read_workbook_xlrd(file_bytes: bytes) -> list[WorkbookSheet]:
                     for col_idx in range(sheet.ncols)
                 ]
             )
+
+        # xlrd merged_cells: list of (rlo, rhi, clo, chi) — rhi and chi are exclusive
+        merged_ranges = list(sheet.merged_cells)
+        _apply_merged_ranges(rows, merged_ranges)
 
         sheets.append(
             {
