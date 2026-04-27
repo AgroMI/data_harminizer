@@ -90,7 +90,7 @@ function UploadHistory() {
               </td>
               <td className="py-3.5 pr-6 text-slate-500">
                 {item.uploaded_at
-                  ? new Date(item.uploaded_at).toLocaleString("hu-HU")
+                  ? new Date(item.uploaded_at).toLocaleString("en-US")
                   : "—"}
               </td>
               <td className="py-3.5 text-right">
@@ -158,9 +158,9 @@ export default function UploadPage() {
       <section className="surface-card px-6 py-8 sm:px-8 sm:py-10">
         <div className="mb-7 space-y-1.5">
           <p className="eyebrow">New upload</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Upload a workbook</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Upload table data</h1>
           <p className="text-sm leading-6 text-slate-500">
-            Accepted formats: .xls · .xlsx · .xlsm · .xltx · .xltm — one file per run. You&apos;ll land in the review step automatically.
+            Accepted formats: .xls · .xlsx · .xlsm · .xltx · .xltm · .csv · .tsv — one file per run. You&apos;ll land in the review step automatically.
           </p>
         </div>
 
@@ -179,14 +179,14 @@ export default function UploadPage() {
                 <p className="font-semibold text-slate-700">Drop a file here or click to browse</p>
               )}
               <p className="text-sm text-slate-400">
-                {selectedFileLabel ? "Click to replace the selected file." : ".xls, .xlsx, .xlsm, .xltx, .xltm"}
+                {selectedFileLabel ? "Click to replace the selected file." : ".xls, .xlsx, .xlsm, .xltx, .xltm, .csv, .tsv"}
               </p>
             </div>
             <input
               id="file-upload"
               type="file"
               className="sr-only"
-              accept=".xls,.xlsx,.xlsm,.xltx,.xltm"
+              accept=".xls,.xlsx,.xlsm,.xltx,.xltm,.csv,.tsv"
               onChange={(event) => {
                 setFile(event.target.files?.[0] ?? null);
                 setError("");
@@ -217,11 +217,11 @@ export default function UploadPage() {
       <section className="surface-card px-6 py-8 sm:px-8 sm:py-10">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div className="space-y-1.5">
-            <p className="eyebrow">Előzmények</p>
-            <h2 className="text-2xl font-semibold tracking-tight text-slate-950">Korábbi feltöltések</h2>
+            <p className="eyebrow">History</p>
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-950">Previous uploads</h2>
           </div>
           <Link href="/uploads" className="btn-ghost px-5 text-sm">
-            Összes megtekintése →
+            View all →
           </Link>
         </div>
         <UploadHistory />

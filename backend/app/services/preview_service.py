@@ -3,11 +3,11 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from etl.block_detector import detect_blocks_with_positions
-from etl.excel_reader import read_excel_workbook
+from etl.excel_reader import read_tabular_source
 from etl.preview_schema import build_preview
 from etl.types import BlockRecord, ParsedUploadSource, PreviewPayload, SheetManifestItem
 
-PARSER_VERSION = "excel_preview_parser_v2"
+PARSER_VERSION = "tabular_preview_parser_v1"
 
 
 def _non_empty_cell_count(rows: list[list[object]]) -> int:
@@ -51,9 +51,9 @@ def _parse_warning_summary(sheet_manifest: list[SheetManifestItem]) -> list[str]
 
 def parse_upload_source(file_bytes: bytes, filename: str) -> ParsedUploadSource:
     try:
-        workbook = read_excel_workbook(file_bytes, filename=filename)
+        workbook = read_tabular_source(file_bytes, filename=filename)
     except Exception as exc:  # pragma: no cover - minimal scaffold safeguard
-        raise ValueError("Could not parse Excel file. Ensure it is a valid .xlsx or .xls file.") from exc
+        raise ValueError("Could not parse table file. Ensure it is a valid Excel, CSV or TSV file.") from exc
 
     block_records: list[BlockRecord] = []
     sheet_manifest: list[SheetManifestItem] = []

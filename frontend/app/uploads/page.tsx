@@ -35,13 +35,13 @@ function UploadCard({ item }: { item: UploadListItem }) {
           </div>
           <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
             {item.sheet_count > 0 && (
-              <span>{item.sheet_count} {item.sheet_count === 1 ? "munkalap" : "munkalap"}</span>
+              <span>{item.sheet_count} {item.sheet_count === 1 ? "worksheet" : "worksheets"}</span>
             )}
             {item.file_size_bytes != null && (
               <span>{formatFileSize(item.file_size_bytes)}</span>
             )}
             {item.uploaded_at && (
-              <span>{new Date(item.uploaded_at).toLocaleString("hu-HU")}</span>
+              <span>{new Date(item.uploaded_at).toLocaleString("en-US")}</span>
             )}
             <span className="font-mono text-[11px] text-slate-400">{item.id}</span>
           </div>
@@ -52,14 +52,14 @@ function UploadCard({ item }: { item: UploadListItem }) {
             href={`/uploads/${encodeURIComponent(item.id)}?stage=review`}
             className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-cyan-200 hover:text-cyan-700"
           >
-            Megnyit →
+            Open →
           </Link>
           {item.status === "committed" && (
             <Link
               href={`/workspace?upload_session_id=${encodeURIComponent(item.id)}`}
               className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
             >
-              Adat nézet
+              Data view
             </Link>
           )}
         </div>
@@ -79,7 +79,7 @@ export default function UploadsListPage() {
         return r.json() as Promise<UploadListResponse>;
       })
       .then((data) => setUploads(data.uploads))
-      .catch((err) => setError(toErrorMessage(err, "Nem sikerült betölteni a feltöltéseket.")));
+      .catch((err) => setError(toErrorMessage(err, "Failed to load uploads.")));
   }, []);
 
   const committed = uploads?.filter((u) => u.status === "committed") ?? [];
@@ -90,14 +90,14 @@ export default function UploadsListPage() {
       <section className="surface-card px-6 py-8 sm:px-8 sm:py-10">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="space-y-1.5">
-            <p className="eyebrow">Feltöltések</p>
-            <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Excel munkafüzetek</h1>
+            <p className="eyebrow">Uploads</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Excel workbooks</h1>
             <p className="text-sm leading-6 text-slate-500">
-              Az összes feltöltött fájl, státusszal és gyorslinkekkel.
+              All uploaded files, with status and quick links.
             </p>
           </div>
           <Link href="/upload" className="btn-primary px-6">
-            + Új feltöltés
+            + New upload
           </Link>
         </div>
       </section>
@@ -115,11 +115,11 @@ export default function UploadsListPage() {
       ) : uploads.length === 0 ? (
         <section className="surface-card px-6 py-8 sm:px-8">
           <EmptyState
-            title="Még nincs feltöltés"
-            body="Töltj fel egy Excel munkafüzetet, és itt fog megjelenni."
+            title="No uploads yet"
+            body="Upload an Excel workbook and it will appear here."
             action={
               <Link href="/upload" className="btn-primary px-6">
-                Feltöltés indítása
+                Start upload
               </Link>
             }
           />
@@ -129,7 +129,7 @@ export default function UploadsListPage() {
           {pending.length > 0 && (
             <section className="surface-card px-6 py-6 sm:px-8">
               <div className="mb-4 flex items-center gap-3">
-                <p className="eyebrow">Folyamatban</p>
+                <p className="eyebrow">In progress</p>
                 <span className="badge bg-amber-100 text-amber-700">{pending.length}</span>
               </div>
               <div className="space-y-2">
@@ -143,7 +143,7 @@ export default function UploadsListPage() {
           {committed.length > 0 && (
             <section className="surface-card px-6 py-6 sm:px-8">
               <div className="mb-4 flex items-center gap-3">
-                <p className="eyebrow">Commitolva</p>
+                <p className="eyebrow">Committed</p>
                 <span className="badge bg-emerald-100 text-emerald-700">{committed.length}</span>
               </div>
               <div className="space-y-2">

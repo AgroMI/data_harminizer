@@ -21,6 +21,7 @@ def evaluate_question(
     actual_result_type = str(actual_response.get("result_type") or "unsupported")
     actual_sql_valid = bool((actual_response.get("validation") or {}).get("valid"))
     actual_execution = actual_response.get("execution")
+    planning_meta = actual_response.get("planning_metadata") or {}
 
     query_plan_match = (
         actual_status == question.expected_status
@@ -53,6 +54,12 @@ def evaluate_question(
         actual_result_type=actual_result_type,
         actual_sql_valid=actual_sql_valid,
         notes=question.notes,
+        llm_used=bool(planning_meta.get("llm_used")),
+        fallback_used=bool(planning_meta.get("fallback_used")),
+        fallback_reason=planning_meta.get("fallback_reason"),
+        plan_origin=str(planning_meta.get("plan_origin") or "deterministic"),
+        llm_attempted=bool(planning_meta.get("llm_attempted")),
+        orchestration_used=bool(planning_meta.get("orchestration_used")),
     )
 
 
@@ -61,6 +68,10 @@ def build_report(
     dataset_name: str,
     results: list[TextToSqlBenchmarkQuestionResult],
     questions: list[TextToSqlBenchmarkQuestion],
+    mode: str = "deterministic",
+    llm_enabled: bool = False,
+    llm_provider: str | None = None,
+    llm_model: str | None = None,
 ) -> TextToSqlBenchmarkReport:
     question_by_id = {question.id: question for question in questions}
     unsupported_results = [item for item in results if question_by_id[item.id].expected_status != "supported"]
@@ -76,6 +87,10 @@ def build_report(
         unsupported_query_rate=_metric([item.unsupported_match for item in unsupported_results]),
         rejected_unsafe_query_rate=_metric([item.unsafe_rejection_match for item in unsafe_results]),
         questions=results,
+        mode=mode,
+        llm_enabled=llm_enabled,
+        llm_provider=llm_provider,
+        llm_model=llm_model,
     )
 
 

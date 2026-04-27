@@ -68,6 +68,12 @@ class TextToSqlBenchmarkQuestionResult:
     actual_result_type: str
     actual_sql_valid: bool
     notes: str | None = None
+    llm_used: bool = False
+    fallback_used: bool = False
+    fallback_reason: str | None = None
+    plan_origin: str = "deterministic"
+    llm_attempted: bool = False
+    orchestration_used: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -84,11 +90,21 @@ class TextToSqlBenchmarkReport:
     unsupported_query_rate: AccuracyMetric
     rejected_unsafe_query_rate: AccuracyMetric
     questions: list[TextToSqlBenchmarkQuestionResult]
+    mode: str = "deterministic"
+    llm_enabled: bool = False
+    llm_provider: str | None = None
+    llm_model: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        llm_questions_count = sum(1 for q in self.questions if q.llm_used)
         return {
             "dataset_name": self.dataset_name,
+            "mode": self.mode,
+            "llm_enabled": self.llm_enabled,
+            "provider": self.llm_provider,
+            "model": self.llm_model,
             "total_questions": self.total_questions,
+            "llm_questions_count": llm_questions_count,
             "query_plan_correctness": self.query_plan_correctness.to_dict(),
             "sql_validity_rate": self.sql_validity_rate.to_dict(),
             "execution_success_rate": self.execution_success_rate.to_dict(),

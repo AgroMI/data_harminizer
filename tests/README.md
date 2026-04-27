@@ -4,6 +4,8 @@ This repository now contains four backend validation layers:
 
 - unit / fake DB tests
   - fast feedback for ETL heuristics, semantic mapping, harmonized reads and legacy tool wrappers
+- tabular reader tests
+  - CSV, semicolon-delimited CSV, TSV and text encoding handling before preview generation
 - MCP + text-to-SQL tests
   - planner, SQL validator, MCP tool chain, audit log behavior and the high-level pipeline endpoint
 - reproducible benchmark tests
@@ -16,6 +18,7 @@ This repository now contains four backend validation layers:
 Core unit / fake DB coverage:
 
 - `tests/backend/test_etl_type_inference.py`
+- `tests/backend/test_tabular_reader.py`
 - `tests/backend/test_block_detector_horizontal_split.py`
 - `tests/backend/test_semantic_mapping_flow.py`
 - `tests/backend/test_unit_harmonization.py`

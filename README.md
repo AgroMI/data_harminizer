@@ -1,7 +1,7 @@
 # Thesis Project Scaffold (Minimal Scope)
 
 This repository contains a runnable scaffold for:
-- Excel upload from frontend.
+- Table-file upload from frontend: Excel (`.xls`, `.xlsx`) plus text tables (`.csv`, `.tsv`).
 - Backend preview parsing (block count, missing data summary, type suggestions, date issues).
 - Preview edit + semantic mapping + commit flow.
 - Raw artifact preservation with provenance metadata.
@@ -67,9 +67,9 @@ The commit step uses this mapping to create harmonized observations with explici
 - `quality_flags`
 - `dimensions_json`
 
-The `raw` layer now preserves the original uploaded workbook separately from the preview snapshot:
+The `raw` layer now preserves the original uploaded table file separately from the preview snapshot:
 
-- `raw.artifacts` stores the original file bytes in PostgreSQL (`bytea`)
+- `raw.artifacts` stores the original uploaded file bytes in PostgreSQL (`bytea`)
 - SHA-256 hash, MIME type, file size and upload timestamp are recorded
 - parser version, preview generation time and a sheet manifest are recorded
 - `raw.upload_sessions` references the raw artifact and stores the derived `preview_json`
@@ -220,7 +220,7 @@ using `backend/scripts/run_migrations.py` invoked by `backend/start.sh`.
 ## Minimal flow
 
 1. Open http://localhost:3000/upload
-2. Upload `.xlsx` or `.xls` file
+2. Upload a supported table file: `.xlsx`, `.xls`, `.csv` or `.tsv`
 3. Continue through the generated `/uploads/{id}` workflow
 4. Review blocks, correct mapping and resolve blocking validation issues
 5. Commit harmonized data
@@ -248,7 +248,7 @@ The UI now uses controlled selectors instead of free-text canonical naming.
 The current source-of-truth layers are intentionally simple, but now explicitly separated:
 
 - `raw.artifacts`
-  - original uploaded workbook bytes
+  - original uploaded file bytes
   - `original_filename`
   - `mime_type`
   - `file_size_bytes`

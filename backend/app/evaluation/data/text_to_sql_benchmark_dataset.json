@@ -686,5 +686,87 @@
     "expected_result_type": "unsupported",
     "expected_sql_valid": false,
     "expected_result": {}
+  },
+  {
+    "id": "llm_alias_genotype_highest_yield",
+    "category": "alias",
+    "question": "Which genotype has the highest yield?",
+    "expected_status": "supported",
+    "expected_intent": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {
+      "target_measure": "yield",
+      "grouping": ["variety"]
+    },
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 1,
+      "aggregation_items": [
+        {"group_value": "Apex", "metric_value": 13500.0, "record_count": 2, "normalized_unit": "kg/ha"}
+      ]
+    },
+    "notes": "LLM required: genotype is not in GROUPING_KEYWORDS, triggers missing_grouping ambiguity flag"
+  },
+  {
+    "id": "llm_alias_crop_output_by_variety",
+    "category": "alias",
+    "question": "Average crop output by variety",
+    "expected_status": "supported",
+    "expected_intent": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {
+      "target_measure": "yield",
+      "grouping": ["variety"]
+    },
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 2,
+      "aggregation_items": [
+        {"group_value": "Apex", "metric_value": 13500.0, "record_count": 2, "normalized_unit": "kg/ha"},
+        {"group_value": "Nova", "metric_value": 11000.0, "record_count": 1, "normalized_unit": "kg/ha"}
+      ]
+    },
+    "notes": "LLM required: crop output is not in MEASURE_TOKEN_MAP, triggers missing_measure ambiguity flag"
+  },
+  {
+    "id": "llm_alias_farm_lowest_yield",
+    "category": "alias",
+    "question": "Which farm has the lowest average yield?",
+    "expected_status": "supported",
+    "expected_intent": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {
+      "target_measure": "yield",
+      "grouping": ["location"]
+    },
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 1,
+      "aggregation_items": [
+        {"group_value": "south", "metric_value": 11000.0, "record_count": 1, "normalized_unit": "kg/ha"}
+      ]
+    },
+    "notes": "LLM required: farm is not in GROUPING_KEYWORDS, triggers missing_grouping ambiguity flag"
+  },
+  {
+    "id": "llm_alias_harvest_by_treatment",
+    "category": "alias",
+    "question": "Average harvest by treatment",
+    "expected_status": "supported",
+    "expected_intent": "aggregate",
+    "expected_result_type": "aggregation",
+    "expected_query_plan": {
+      "target_measure": "yield",
+      "grouping": ["treatment"]
+    },
+    "expected_sql_valid": true,
+    "expected_result": {
+      "count": 2,
+      "aggregation_items": [
+        {"group_value": "control", "metric_value": 12000.0, "record_count": 1, "normalized_unit": "kg/ha"},
+        {"group_value": "treated", "metric_value": 13000.0, "record_count": 2, "normalized_unit": "kg/ha"}
+      ]
+    },
+    "notes": "LLM required: harvest is not in MEASURE_TOKEN_MAP, triggers missing_measure ambiguity flag"
   }
 ]

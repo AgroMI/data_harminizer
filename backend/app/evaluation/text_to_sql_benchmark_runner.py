@@ -13,6 +13,7 @@ from backend.app.evaluation.text_to_sql_benchmark_dataset import (
 )
 from backend.app.evaluation.text_to_sql_benchmark_scoring import build_report, evaluate_question
 from backend.app.evaluation.text_to_sql_benchmark_types import TextToSqlBenchmarkReport
+from backend.app.llm.config import load_local_llm_config
 from backend.app.mcp.server import MCPServer
 from backend.app.mcp.tools import core_tools
 from backend.app.text_to_sql.models import GeneratedSql, SqlExecutionResult
@@ -220,6 +221,7 @@ def run_text_to_sql_benchmark(
     *,
     dataset_path: Path | None = None,
     seed_rows_path: Path | None = None,
+    mode: str = "deterministic",
 ) -> TextToSqlBenchmarkReport:
     dataset = load_text_to_sql_benchmark_dataset(dataset_path)
     seed_rows = load_text_to_sql_seed_rows(seed_rows_path)
@@ -230,25 +232,38 @@ def run_text_to_sql_benchmark(
         with patch("backend.app.text_to_sql.planner.get_harmonized_query_metadata", backend.get_harmonized_query_metadata):
             with patch("backend.app.mcp.tools.core_tools.get_harmonized_query_metadata", backend.get_harmonized_query_metadata):
                 with patch("backend.app.mcp.tools.core_tools.execute_generated_sql", backend.execute_generated_sql):
-                    server = MCPServer()
-                    for question in dataset:
-                        response = run_text_to_sql_pipeline(
-                            question=question.question,
-                            server=server,
-                        ).model_dump(mode="json")
-                        results.append(evaluate_question(question=question, actual_response=response))
+                    with patch("backend.app.llm.planner_adapter.get_harmonized_query_metadata", backend.get_harmonized_query_metadata):
+                        server = MCPServer()
+                        for question in dataset:
+                            response = run_text_to_sql_pipeline(
+                                question=question.question,
+                                server=server,
+                                mode=mode,
+                            ).model_dump(mode="json")
+                            results.append(evaluate_question(question=question, actual_response=response))
 
     resolved_dataset_name = "text_to_sql_golden_v1"
     if dataset_path is not None and dataset_path != DEFAULT_TEXT_TO_SQL_BENCHMARK_DATASET_PATH:
         resolved_dataset_name = dataset_path.stem
-    return build_report(dataset_name=resolved_dataset_name, results=results, questions=dataset)
+    llm_config = load_local_llm_config()
+    return build_report(
+        dataset_name=resolved_dataset_name,
+        results=results,
+        questions=dataset,
+        mode=mode,
+        llm_enabled=llm_config.available,
+        llm_provider="openai_compatible_http" if llm_config.available else None,
+        llm_model=llm_config.model_name or None,
+    )
 
 
 def build_text_summary(report: TextToSqlBenchmarkReport) -> str:
+    llm_count = sum(1 for q in report.questions if q.llm_used)
     return "\n".join(
         [
             f"Dataset: {report.dataset_name}",
-            f"Questions: {report.total_questions}",
+            f"Mode: {report.mode}",
+            f"Questions: {report.total_questions} (LLM used: {llm_count})",
             _metric_line("Query plan correctness", report.query_plan_correctness),
             _metric_line("SQL validity rate", report.sql_validity_rate),
             _metric_line("Execution success rate", report.execution_success_rate),
@@ -260,12 +275,14 @@ def build_text_summary(report: TextToSqlBenchmarkReport) -> str:
 
 
 def build_markdown_summary(report: TextToSqlBenchmarkReport) -> str:
+    llm_count = sum(1 for q in report.questions if q.llm_used)
     return "\n".join(
         [
             "# Text-to-SQL Benchmark Summary",
             "",
             f"- Dataset: `{report.dataset_name}`",
-            f"- Questions: `{report.total_questions}`",
+            f"- Mode: `{report.mode}`",
+            f"- Questions: `{report.total_questions}` (LLM used: `{llm_count}`)",
             f"- Query plan correctness: `{report.query_plan_correctness.correct}/{report.query_plan_correctness.total}` ({report.query_plan_correctness.accuracy:.4f})",
             f"- SQL validity rate: `{report.sql_validity_rate.correct}/{report.sql_validity_rate.total}` ({report.sql_validity_rate.accuracy:.4f})",
             f"- Execution success rate: `{report.execution_success_rate.correct}/{report.execution_success_rate.total}` ({report.execution_success_rate.accuracy:.4f})",

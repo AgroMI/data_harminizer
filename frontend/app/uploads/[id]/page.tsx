@@ -906,7 +906,7 @@ function UploadWorkflowPageContent() {
                     <p>Filename: {rawArtifact.original_filename}</p>
                     <p>Size: {formatBytes(rawArtifact.file_size_bytes)}</p>
                     <p>Parser: {rawArtifact.parser_version}</p>
-                    <p>Uploaded at: {new Date(rawArtifact.uploaded_at).toLocaleString("hu-HU")}</p>
+                    <p>Uploaded at: {new Date(rawArtifact.uploaded_at).toLocaleString("en-US")}</p>
                     <p className="break-all">SHA-256: {rawArtifact.file_hash_sha256}</p>
                   </div>
                 ) : (

@@ -22,12 +22,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed-rows", type=Path, default=None, help="Optional path to benchmark seed rows.")
     parser.add_argument("--json-output", type=Path, default=None, help="Optional JSON report output path.")
     parser.add_argument("--markdown-output", type=Path, default=None, help="Optional Markdown summary output path.")
+    parser.add_argument(
+        "--mode",
+        default="deterministic",
+        choices=["deterministic", "local_llm_hybrid", "local_llm_tool_orchestrated"],
+        help="Pipeline mode. Use local_llm_hybrid or local_llm_tool_orchestrated to exercise the LLM path.",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    report = run_text_to_sql_benchmark(dataset_path=args.dataset, seed_rows_path=args.seed_rows)
+    report = run_text_to_sql_benchmark(dataset_path=args.dataset, seed_rows_path=args.seed_rows, mode=args.mode)
 
     if args.json_output is not None:
         args.json_output.write_text(json.dumps(report.to_dict(), indent=2, ensure_ascii=True), encoding="utf-8")
