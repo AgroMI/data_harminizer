@@ -28,6 +28,7 @@ SELECT
     normalized_unit,
     validation_status,
     quality_flags,
+    block_id,
     source_sheet,
     source_row_index,
     source_column
@@ -163,7 +164,7 @@ def list_harmonized_observations(
 
     sql = (
         f"{sql} ORDER BY observation_date NULLS LAST, variable, plot_id NULLS LAST, "
-        "source_sheet, source_row_index, source_column LIMIT %s"
+        "source_sheet, block_id, source_row_index, source_column LIMIT %s"
     )
     params.append(limit)
 

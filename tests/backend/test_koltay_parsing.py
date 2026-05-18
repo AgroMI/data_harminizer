@@ -25,7 +25,7 @@ from etl.quality_validation import validate_observation_records
 FIXTURES = Path(__file__).resolve().parent.parent / "fixtures"
 
 
-def _build_staging_rows_for_test(preview):
+def _build_staging_rows_for_test(preview, *, year_override=None):
     psycopg_module = sys.modules.get("psycopg")
     psycopg_types_module = sys.modules.get("psycopg.types")
     psycopg_types_json_module = sys.modules.get("psycopg.types.json")
@@ -67,7 +67,7 @@ def _build_staging_rows_for_test(preview):
 
         from backend.app.services.uploads.commit_service import build_all_staging_rows
 
-        return build_all_staging_rows(upload_id="demo", blocks=preview["blocks"])
+        return build_all_staging_rows(upload_id="demo", blocks=preview["blocks"], year_override=year_override)
     finally:
         if psycopg_module is None:
             sys.modules.pop("psycopg", None)
@@ -366,10 +366,11 @@ class TestRealKoltay2007DefaultBlockSeparation:
         assert decisions[24:] == ["skip_summary_block", "skip_summary_block"]
 
     def test_harmonized_rows_preserve_variety_measure_and_treatment_metadata(self, preview):
-        rows = _build_staging_rows_for_test(preview)
+        rows = _build_staging_rows_for_test(preview, year_override=2007)
         validate_observation_records(rows)
 
         assert len(rows) == 960
+        assert {str(row["observation_date"]) for row in rows} == {"2007-01-01"}
         assert {row["block_id"] for row in rows} == {block["block_id"] for block in preview["blocks"][:24]}
         assert not any(str(row["source_column"]) in {"a", "b", "c", "d", "e", "f", "g", "h"} for row in rows)
 
@@ -434,6 +435,24 @@ class TestRealKoltay2017:
                 f"got {len(numeric_rows)}"
             )
 
+    def test_upload_parser_auto_merges_vertical_measurement_blocks(self):
+        data = (FIXTURES / "Koltay búza 2017.xlsx").read_bytes()
+        preview = parse_upload_source(data, filename="Koltay búza 2017.xlsx")["preview"]
+
+        assert preview["block_count"] == 4
+        first_block = preview["blocks"][0]
+        assert first_block["range"] == "A4:F140"
+        suggestions = {item["column"]: item for item in first_block["type_suggestions"]}
+        assert suggestions["i."]["canonical_measure"] == "yield"
+        assert suggestions["i."]["unit"] == "kg/parc"
+
+        rows = _build_staging_rows_for_test(preview)
+        assert len(rows) > 0
+        assert any(row["variable"] == "yield" and row["unit"] == "kg/parc" for row in rows)
+        assert {str(row["observation_date"]) for row in rows} == {"2017-07-05"}
+        assert {row["validation_status"] for row in rows} == {"valid"}
+        assert not any(row["quality_flags"] for row in rows)
+
 
 class TestRealKoltay2024:
     """Real Koltay búza 2024.xlsx – flat harvester log table."""
@@ -462,3 +481,24 @@ class TestRealKoltay2024:
         assert any("nedvesség" in h or "moisture" in h.lower() for h in headers), (
             f"moisture column missing: {headers}"
         )
+
+    def test_upload_parser_preserves_harvester_log_and_plot_identifier(self):
+        data = (FIXTURES / "Koltay búza 2024.xlsx").read_bytes()
+        preview = parse_upload_source(data, filename="Koltay búza 2024.xlsx")["preview"]
+
+        harvester_block = preview["blocks"][0]
+        assert harvester_block["sheet"] == "kombájn"
+        assert harvester_block["range"] == "A1:L481"
+
+        suggestions = {item["column"]: item for item in harvester_block["type_suggestions"]}
+        assert suggestions["customid"]["semantic_role"] == "dimension"
+        assert suggestions["customid"]["canonical_dimension"] == "plot_id"
+        assert suggestions["nedvesség"]["canonical_measure"] == "moisture"
+        assert suggestions["nedvesség"]["unit"] == "%"
+
+        rows = _build_staging_rows_for_test(preview)
+        assert any(row["plot_id"] == "A1-I" for row in rows)
+        assert "2007-01-01" not in {str(row["observation_date"]) for row in rows}
+        assert {"2024-07-09", "2024-07-10"}.issubset({str(row["observation_date"]) for row in rows})
+        assert {row["validation_status"] for row in rows} == {"valid"}
+        assert not any(row["quality_flags"] for row in rows)

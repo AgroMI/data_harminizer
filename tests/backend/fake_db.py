@@ -249,9 +249,7 @@ class FakeCursor:
             self.rowcount = 1
             return
 
-        if normalized.startswith(
-            "SELECT upload_session_id::text AS upload_session_id, observation_date, plot_id, variety, treatment, location, variable, value::double precision AS value, unit, normalized_value::double precision AS normalized_value, normalized_unit, validation_status, quality_flags, source_sheet, source_row_index, source_column FROM harmonized.observations"
-        ):
+        if normalized.startswith("SELECT upload_session_id::text AS upload_session_id, observation_date"):
             params_iter = iter(values)
             upload_id = str(next(params_iter)) if "upload_session_id = %s" in normalized else None
             variable = next(params_iter) if "variable = %s" in normalized else None
@@ -292,6 +290,7 @@ class FakeCursor:
                     item["plot_id"] is None,
                     item["plot_id"] or "",
                     item["source_sheet"],
+                    item["block_id"],
                     item["source_row_index"],
                     item["source_column"],
                 )

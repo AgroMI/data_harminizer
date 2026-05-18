@@ -23,6 +23,7 @@ class HarmonizedObservationListItem(BaseModel):
     normalized_unit: CanonicalUnit | None = None
     validation_status: ValidationStatus
     quality_flags: list[QualityFlag] = Field(default_factory=list)
+    block_id: str
     source_sheet: str
     source_row_index: int
     source_column: str

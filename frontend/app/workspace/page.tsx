@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { EmptyState } from "../components/EmptyState";
@@ -66,6 +66,7 @@ export default function WorkspacePage() {
 
 function WorkspacePageContent() {
   const searchParams = useSearchParams();
+  const requestSequence = useRef(0);
   const [filters, setFilters] = useState<WorkspaceFilters>(DEFAULT_FILTERS);
   const [metadata, setMetadata] = useState<QueryMetadata | null>(null);
   const [rows, setRows] = useState<HarmonizedObservation[]>([]);
@@ -109,8 +110,13 @@ function WorkspacePageContent() {
   }, [rows]);
 
   async function loadWorkspaceData(nextFilters: WorkspaceFilters): Promise<void> {
+    const requestId = requestSequence.current + 1;
+    requestSequence.current = requestId;
     setLoadingState("Loading committed data...");
     setError("");
+    setRows([]);
+    setAggregationRows([]);
+    setSelectedRow(null);
 
     try {
       const rowParams = new URLSearchParams();
@@ -146,12 +152,19 @@ function WorkspacePageContent() {
       const rowsPayload = (await rowsResponse.json()) as HarmonizedObservationResponse;
       const aggregationPayload = (await aggregationResponse.json()) as AggregationResponse;
 
+      if (requestId !== requestSequence.current) {
+        return;
+      }
+
       setMetadata(metadataPayload);
       setRows(rowsPayload.items || []);
       setAggregationRows(aggregationPayload.items || []);
       setSelectedRow(rowsPayload.items[0] || null);
       setLoadingState("Committed data loaded.");
     } catch (caught) {
+      if (requestId !== requestSequence.current) {
+        return;
+      }
       setMetadata(null);
       setRows([]);
       setAggregationRows([]);
@@ -354,9 +367,9 @@ function WorkspacePageContent() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {filteredRows.map((row) => (
+                    {filteredRows.map((row, index) => (
                       <tr
-                        key={`${row.upload_session_id}-${row.source_sheet}-${row.source_row_index}-${row.source_column}`}
+                        key={observationRowKey(row, index)}
                         className="cursor-pointer hover:bg-cyan-50/60"
                         onClick={() => setSelectedRow(row)}
                       >
@@ -403,7 +416,10 @@ function WorkspacePageContent() {
                   value={`${formatNumber(selectedRow.normalized_value)} ${selectedRow.normalized_unit ?? ""}`.trim()}
                 />
                 <Field label="Status" value={selectedRow.validation_status} />
-                <Field label="Lineage" value={`${selectedRow.source_sheet}:${selectedRow.source_row_index} · ${selectedRow.source_column}`} />
+                <Field
+                  label="Lineage"
+                  value={`${selectedRow.source_sheet}:${selectedRow.block_id}:${selectedRow.source_row_index} · ${selectedRow.source_column}`}
+                />
               </div>
             ) : (
               <EmptyState title="No row selected" body="Select a row from the table to inspect its harmonized details." />
@@ -425,6 +441,21 @@ function WorkspacePageContent() {
       </section>
     </div>
   );
+}
+
+function observationRowKey(row: HarmonizedObservation, index: number): string {
+  return [
+    row.upload_session_id,
+    row.source_sheet,
+    row.block_id,
+    row.source_row_index,
+    row.source_column,
+    row.variable,
+    row.plot_id,
+    index
+  ]
+    .map((part) => String(part ?? ""))
+    .join("::");
 }
 
 function Field({ label, value }: { label: string; value: string }) {

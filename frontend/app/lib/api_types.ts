@@ -40,6 +40,7 @@ export type HarmonizedObservation = {
   normalized_unit: CanonicalUnit | null;
   validation_status: ValidationStatus;
   quality_flags: QualityFlag[];
+  block_id: string;
   source_sheet: string;
   source_row_index: number;
   source_column: string;

@@ -312,7 +312,7 @@ function YearOverridePanel({
 }) {
   const blocksNeedingYear = blocks.filter((block) => {
     const hasDateColumn = block.type_suggestions.some((s) => s.semantic_role === "date");
-    return !hasDateColumn;
+    return !hasDateColumn && !block.inferred_observation_date;
   });
 
   if (blocksNeedingYear.length === 0) {
@@ -337,8 +337,8 @@ function YearOverridePanel({
             type="number"
             min={1900}
             max={2100}
-            placeholder={effectiveYear != null ? String(effectiveYear) : "e.g. 2007"}
-            value={yearOverride ?? ""}
+            placeholder="e.g. 2007"
+            value={effectiveYear ?? ""}
             onChange={(e) => {
               const raw = e.target.value;
               if (!raw) {
@@ -427,7 +427,7 @@ function UploadWorkflowPageContent() {
         const nextPreview = previewPayload.preview || null;
 
         setSavedPreview(nextPreview);
-        setDraftPreview(nextPreview ? clonePreview(nextPreview) : null);
+        setDraftPreview(nextPreview ? withDefaultYearOverride(nextPreview) : null);
         setRawArtifact(previewPayload.raw_artifact || null);
         setUploadStatus(uploadPayload.status);
 
@@ -978,7 +978,35 @@ function UploadWorkflowPageContent() {
   );
 }
 
+function withDefaultYearOverride(preview: PreviewPayload): PreviewPayload {
+  const next = clonePreview(preview);
+  if (next.year_override != null) {
+    return next;
+  }
+
+  const inferredYears = [
+    ...new Set(
+      next.blocks
+        .filter((block) => {
+          const hasDateColumn = block.type_suggestions.some((item) => item.semantic_role === "date");
+          return !hasDateColumn && !block.inferred_observation_date;
+        })
+        .map((block) => block.inferred_year)
+        .filter((year): year is number => year !== null)
+    )
+  ];
+
+  if (inferredYears.length === 1) {
+    next.year_override = inferredYears[0];
+  }
+
+  return next;
+}
+
 function blockEffectiveYear(block: PreviewBlock, yearOverride: number | null): number | null {
+  if (block.inferred_observation_date) {
+    return block.inferred_year ?? null;
+  }
   return yearOverride ?? block.inferred_year ?? null;
 }
 
@@ -1000,7 +1028,8 @@ function buildDraftIssues(
     }
 
     const hasDateColumn = dateColumns.length > 0;
-    if (!hasDateColumn && blockEffectiveYear(block, yearOverride) === null) {
+    const hasInferredObservationDate = Boolean(block.inferred_observation_date);
+    if (!hasDateColumn && !hasInferredObservationDate && blockEffectiveYear(block, yearOverride) === null) {
       errors.push({
         level: "error",
         blockId: block.block_id,

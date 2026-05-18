@@ -59,6 +59,7 @@ def validate_observation_records(records: list[MutableMapping[str, Any]]) -> Non
 
         duplicate_key = (
             record.get("upload_session_id"),
+            record.get("block_id"),
             record.get("source_sheet"),
             record.get("observation_date"),
             record.get("plot_id"),

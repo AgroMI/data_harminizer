@@ -47,6 +47,7 @@ export type PreviewBlock = {
   type_suggestions: ColumnSuggestion[];
   date_issues: DateIssueItem[];
   inferred_year: number | null;
+  inferred_observation_date?: string | null;
 };
 
 export type PreviewPayload = {

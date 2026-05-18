@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Literal, TypedDict
 
 ColumnType = Literal["text", "numeric", "date"]
@@ -86,6 +86,7 @@ class ExtractedTable(TypedDict):
     data_row_start_index: int
     inferred_unit: str | None
     inferred_year: int | None
+    inferred_observation_date: date | None
 
 
 class PublicPreviewBlock(TypedDict):
@@ -104,6 +105,7 @@ class PublicPreviewBlock(TypedDict):
     type_suggestions: list[TypeSuggestionItem]
     date_issues: list[DateIssueItem]
     inferred_year: int | None
+    inferred_observation_date: str | None
 
 
 class PreviewBlock(PublicPreviewBlock):

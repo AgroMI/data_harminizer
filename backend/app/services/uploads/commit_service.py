@@ -39,6 +39,7 @@ from etl.type_inference import parse_date_value, to_numeric_value
 from etl.unit_harmonization import normalize_measure_value
 
 _N_LEVEL_SOURCE_COLUMN_PATTERN = re.compile(r"^(n_\d+)(?:_([a-z0-9]+))?$", re.IGNORECASE)
+_REPLICATE_SOURCE_COLUMN_PATTERN = re.compile(r"^(i{1,3}|iv|v|vi{0,3}|ix|x)(?:\.|_)", re.IGNORECASE)
 
 DELETE_HARMONIZED_SQL = "DELETE FROM harmonized.observations WHERE upload_session_id = %s"
 DELETE_STAGING_SQL = "DELETE FROM staging.observations WHERE upload_session_id = %s"
@@ -169,6 +170,8 @@ def _validate_year_availability(*, blocks: list[PreviewBlock], year_override: in
             for item in suggestions
         )
         if has_date_column:
+            continue
+        if parse_date_value(block.get("inferred_observation_date")) is not None:
             continue
         block_inferred_year = block.get("inferred_year")
         effective_year = (
@@ -311,18 +314,15 @@ def build_block_context(
     data_row_start_index = table.get("data_row_start_index")
     if not isinstance(data_row_start_index, int) or data_row_start_index < 0:
         data_row_start_index = 1 if table["header_in_first_row"] else 0
-    block_inferred_year = block.get("inferred_year")
-    effective_year = (
-        year_override
-        if isinstance(year_override, int)
-        else (int(block_inferred_year) if isinstance(block_inferred_year, int) else None)
-    )
+    effective_year = year_override if isinstance(year_override, int) else None
+    inferred_observation_date = parse_date_value(block.get("inferred_observation_date"))
     return {
         "block": block,
         "block_id": block_id,
         "source_sheet": source_sheet,
         "date_column": date_column,
         "effective_year": effective_year,
+        "inferred_observation_date": inferred_observation_date,
         "block_row_start": int(block.get("row_start") or 1),
         "data_row_start_index": data_row_start_index,
         "requires_observation_date": date_column is not None,
@@ -357,7 +357,8 @@ def build_data_row_observations(
     observation_date = parse_observation_date(
         data_row,
         block_context["date_column"],
-        effective_year=block_context.get("effective_year"),
+        fallback_date=block_context.get("inferred_observation_date"),
+        fallback_year=block_context.get("effective_year"),
     )
     dimension_values = canonical_dimension_payload(block_context["block"], data_row)
     dimensions_json = {key: value for key, value in dimension_values.items() if value is not None}
@@ -383,15 +384,18 @@ def parse_observation_date(
     data_row: dict[str, Any],
     date_column: str | None,
     *,
-    effective_year: int | None = None,
+    fallback_date: date | None = None,
+    fallback_year: int | None = None,
 ) -> date | None:
     if date_column is not None:
         row_date = parse_date_value(data_row.get(date_column))
         if row_date is not None:
             return row_date
-        # Row has a date column but this cell is missing — fall through to year fallback
-    if effective_year is not None:
-        return date(effective_year, 1, 1)
+        # Row has a date column but this cell is missing — fall through to exact document date if available.
+    if fallback_date is not None:
+        return fallback_date
+    if isinstance(fallback_year, int):
+        return date(fallback_year, 1, 1)
     return None
 
 
@@ -433,6 +437,8 @@ def build_measure_observation(
             "replicate_column_code",
             measure_metadata["replicate_column_code"],
         )
+    if measure_metadata.get("replicate") is not None:
+        record_dimensions_json.setdefault("replicate", measure_metadata["replicate"])
 
     numeric_value, unit, normalized_value, normalized_unit = normalize_measure_observation(
         data_row=data_row,
@@ -538,15 +544,19 @@ def parse_measure_column_metadata(
     metadata: dict[str, str | None] = {
         "meaning": canonical_measure,
         "treatment": None,
+        "replicate": None,
         "replicate_column_code": None,
     }
     match = _N_LEVEL_SOURCE_COLUMN_PATTERN.match(column.strip().lower())
-    if match is None:
+    if match is not None:
+        metadata["meaning"] = canonical_measure or "yield"
+        metadata["treatment"] = match.group(1)
+        metadata["replicate_column_code"] = match.group(2)
         return metadata
 
-    metadata["meaning"] = canonical_measure or "yield"
-    metadata["treatment"] = match.group(1)
-    metadata["replicate_column_code"] = match.group(2)
+    replicate_match = _REPLICATE_SOURCE_COLUMN_PATTERN.match(column.strip().lower())
+    if replicate_match is not None:
+        metadata["replicate"] = replicate_match.group(1).upper() + "."
     return metadata
 
 

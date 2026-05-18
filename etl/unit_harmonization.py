@@ -20,7 +20,7 @@ UNIT_TOKEN_MAP: dict[CanonicalMeasure, dict[SupportedUnit, tuple[str, ...]]] = {
     "yield": {
         "kg/ha": ("kg_ha", "kg/ha"),
         "t/ha": ("t_ha", "t/ha"),
-        "kg/parc": ("kg_parc", "kg/parc", "parc"),
+        "kg/parc": ("kg_parc", "kg/parc", "parc", "suly", "súly"),
     },
     "moisture": {
         "%": ("pct", "%", "percent"),

@@ -81,12 +81,22 @@ _PREAMBLE_UNIT_PATTERNS: list[tuple[str, tuple[str, ...]]] = [
     ("kg/parc", ("kg/parc", "kg_parc", "parc.")),
     ("t/ha", ("t/ha", "t_ha")),
     ("kg/ha", ("kg/ha", "kg_ha")),
-    ("%", ("pct", "percent")),
+    ("%", ("%", "pct", "percent", "víz", "viz", "nedvesség", "nedvesseg")),
     ("cm", (" cm", "_cm")),
     ("m", (" m", "_m")),
 ]
 
 _YEAR_RE = re.compile(r"\b((?:19|20)\d{2})\b")
+_DOTTED_DATE_RE = re.compile(r"\b((?:19|20)\d{2})\.\s*(\d{1,2})\.\s*(\d{1,2})(?:\s*[-–]\s*\d{1,2})?\.?\b")
+
+_MEASURE_BY_UNIT: dict[str, str] = {
+    "kg/ha": "yield",
+    "t/ha": "yield",
+    "kg/parc": "yield",
+    "%": "moisture",
+    "cm": "plant_height",
+    "m": "plant_height",
+}
 
 
 def _scan_preamble_for_block_unit(rows: list[list[Any]], header_start_index: int) -> str | None:
@@ -104,6 +114,12 @@ def _scan_preamble_for_block_unit(rows: list[list[Any]], header_start_index: int
     return None
 
 
+def _infer_measure_from_block_unit(block_unit: str | None) -> str | None:
+    if block_unit is None:
+        return None
+    return _MEASURE_BY_UNIT.get(block_unit)
+
+
 def _scan_preamble_for_year(rows: list[list[Any]], header_start_index: int) -> int | None:
     if header_start_index == 0:
         return None
@@ -115,6 +131,32 @@ def _scan_preamble_for_year(rows: list[list[Any]], header_start_index: int) -> i
     )
     match = _YEAR_RE.search(preamble_text)
     return int(match.group(1)) if match else None
+
+
+def _scan_preamble_for_observation_date(rows: list[list[Any]], header_start_index: int) -> date | None:
+    if header_start_index == 0:
+        return None
+
+    for row in rows[:header_start_index]:
+        for cell in row:
+            parsed = parse_date_value(cell)
+            if parsed is not None:
+                return parsed
+
+            if not isinstance(cell, str):
+                continue
+
+            match = _DOTTED_DATE_RE.search(cell.strip())
+            if match is None:
+                continue
+
+            year, month, day = (int(part) for part in match.groups())
+            try:
+                return date(year, month, day)
+            except ValueError:
+                continue
+
+    return None
 
 
 def _extract_year_from_filename(file_name: str) -> int | None:
@@ -431,6 +473,7 @@ def _build_extracted_table(
     data_row_start_index: int,
     inferred_unit: str | None,
     inferred_year: int | None = None,
+    inferred_observation_date: date | None = None,
 ) -> ExtractedTable:
     data_rows = rows_to_dicts(headers, data_matrix)
     _forward_fill_group_labels(headers, data_rows)
@@ -445,6 +488,7 @@ def _build_extracted_table(
         "data_row_start_index": data_row_start_index,
         "inferred_unit": inferred_unit,
         "inferred_year": inferred_year,
+        "inferred_observation_date": inferred_observation_date,
     }
 
 
@@ -457,6 +501,7 @@ def _extract_table_with_resolved_headers(
     header_row_count: int,
     inferred_unit: str | None,
     inferred_year: int | None = None,
+    inferred_observation_date: date | None = None,
 ) -> ExtractedTable:
     col_count = max((len(row) for row in block_cells), default=0)
     normalized_rows = [row + [None] * (col_count - len(row)) for row in block_cells]
@@ -469,6 +514,7 @@ def _extract_table_with_resolved_headers(
         data_row_start_index=data_row_start_index,
         inferred_unit=inferred_unit,
         inferred_year=inferred_year,
+        inferred_observation_date=inferred_observation_date,
     )
 
 
@@ -563,6 +609,7 @@ def extract_table_from_block_cells(block_cells: list[list[Any]]) -> ExtractedTab
             "data_row_start_index": 0,
             "inferred_unit": None,
             "inferred_year": None,
+            "inferred_observation_date": None,
         }
 
     col_count = max((len(row) for row in block_cells), default=0)
@@ -572,6 +619,7 @@ def extract_table_from_block_cells(block_cells: list[list[Any]]) -> ExtractedTab
     header_row_count = 0
     inferred_unit = _scan_preamble_for_block_unit(normalized_rows, header_start_index or 0)
     inferred_year = _scan_preamble_for_year(normalized_rows, header_start_index or 0)
+    inferred_observation_date = _scan_preamble_for_observation_date(normalized_rows, header_start_index or 0)
 
     if header_start_index is not None:
         header_row_count = 1
@@ -602,6 +650,7 @@ def extract_table_from_block_cells(block_cells: list[list[Any]]) -> ExtractedTab
         data_row_start_index=data_row_start_index,
         inferred_unit=inferred_unit,
         inferred_year=inferred_year,
+        inferred_observation_date=inferred_observation_date,
     )
 
 
@@ -621,12 +670,14 @@ def extract_table_details_from_preview_block(block: dict[str, Any]) -> Extracted
             "data_row_start_index": 0,
             "inferred_unit": None,
             "inferred_year": None,
+            "inferred_observation_date": None,
         }
 
     normalized_cells = [list(row) for row in block_cells if isinstance(row, list)]
     resolved_headers = block.get("_resolved_headers")
     data_row_start_index = block.get("_data_row_start_index")
     block_inferred_year = block.get("inferred_year")
+    block_inferred_observation_date = parse_date_value(block.get("inferred_observation_date"))
     if (
         isinstance(resolved_headers, list)
         and all(isinstance(header, str) for header in resolved_headers)
@@ -641,6 +692,7 @@ def extract_table_details_from_preview_block(block: dict[str, Any]) -> Extracted
             header_row_count=int(block.get("_header_row_count") or 0),
             inferred_unit=block.get("_inferred_unit") if isinstance(block.get("_inferred_unit"), str) else None,
             inferred_year=int(block_inferred_year) if isinstance(block_inferred_year, int) else None,
+            inferred_observation_date=block_inferred_observation_date,
         )
 
     return extract_table_from_block_cells(normalized_cells)
@@ -745,6 +797,8 @@ def _enrich_type_suggestions(
                 warnings=warnings,
             )
         canonical_measure = default_canonical_measure(semantic_role, column)
+        if semantic_role == "measure" and canonical_measure is None:
+            canonical_measure = _infer_measure_from_block_unit(block_unit)  # type: ignore[assignment]
         # Pass actual column values so replicate detection works even for generic column names
         canonical_dimension = (
             inferred_canonical_dimension
@@ -810,6 +864,7 @@ def build_preview(
                 header_row_count=0,
                 inferred_unit=anchor["inferred_unit"],
                 inferred_year=anchor["inferred_year"],
+                inferred_observation_date=anchor.get("inferred_observation_date"),
             )
             inherited_from_block_id = anchor["block_id"]
 
@@ -818,6 +873,8 @@ def build_preview(
 
         # Preamble year takes priority; fall back to filename year
         effective_inferred_year = table.get("inferred_year") if table.get("inferred_year") is not None else filename_year
+        block_record_observation_date = parse_date_value(block.get("inferred_observation_date"))
+        inferred_observation_date = table.get("inferred_observation_date") or block_record_observation_date
 
         sample_rows = [
             {header: _serialize_cell(row.get(header)) for header in headers}
@@ -853,6 +910,7 @@ def build_preview(
                 "headers": list(headers),
                 "inferred_unit": table.get("inferred_unit"),
                 "inferred_year": table.get("inferred_year"),
+                "inferred_observation_date": table.get("inferred_observation_date"),
             }
 
         preview_block: PreviewBlock = {
@@ -871,6 +929,7 @@ def build_preview(
             "type_suggestions": type_suggestions,
             "date_issues": date_issues,
             "inferred_year": effective_inferred_year,
+            "inferred_observation_date": inferred_observation_date.isoformat() if isinstance(inferred_observation_date, date) else None,
             "_cells": [[_serialize_cell(value) for value in row] for row in block_cells],
             "_resolved_headers": list(headers),
             "_header_in_first_row": table["header_in_first_row"],

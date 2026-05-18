@@ -26,7 +26,7 @@ CANONICAL_DATE = "observation_date"
 DATE_TOKENS = ("date", "day", "time", "timestamp", "harvest_date", "sampling_date")
 
 DIMENSION_TOKEN_MAP: dict[CanonicalDimension, tuple[str, ...]] = {
-    "plot_id": ("plot_id", "plot", "parcel", "parcela", "plotcode", "plot_code"),
+    "plot_id": ("plot_id", "plot", "parcel", "parcela", "plotcode", "plot_code", "customid", "custom_id"),
     "variety": ("variety", "cultivar", "genotype", "hybrid"),
     "treatment": ("treatment", "treat", "trt", "fert", "fertilizer", "nitrogen"),
     "location": ("location", "site", "station", "field", "farm"),
@@ -44,8 +44,10 @@ MEASURE_TOKEN_MAP: dict[CanonicalMeasure, tuple[str, ...]] = {
         "parcellatermes",
         "termes",
         "sza",
+        "suly",
+        "súly",
     ),
-    "moisture": ("moisture", "humidity", "moisture_pct", "moisture_percent", "pct", "viz", "víz"),
+    "moisture": ("moisture", "humidity", "moisture_pct", "moisture_percent", "pct", "viz", "víz", "nedvesseg", "nedvesség"),
     "plant_height": ("plant_height", "height", "plantheight", "height_cm"),
 }
 
@@ -95,8 +97,7 @@ def _values_are_variety_labels(values: list[Any]) -> bool:
     if numbered_ratio >= 0.5:
         return True
 
-    unique = set(normalized)
-    return len(unique) >= 2
+    return False
 
 
 def infer_default_canonical_dimension(
@@ -105,6 +106,8 @@ def infer_default_canonical_dimension(
     values: list[Any] | None = None,
 ) -> CanonicalDimension | None:
     normalized = _normalize_column_key(column)
+    if any(token in normalized for token in ("parc.mélys", "parc.melys", "parc._szél", "parc._szel", "folyamatos_szám", "folyamatos_szam")):
+        return "plot_id"
     for canonical, tokens in DIMENSION_TOKEN_MAP.items():
         if normalized == canonical or any(token in normalized for token in tokens):
             return canonical
@@ -139,6 +142,9 @@ def infer_default_semantic_role(
 
     if suggested_type == "date" or any(token in normalized for token in DATE_TOKENS):
         return "date"
+
+    if normalized in {"hőmérséklet", "homerseklet", "nedvesség_nyers_adatok", "nedvesseg_nyers_adatok"}:
+        return "ignore"
 
     if column.startswith("column_") or "annotation_like" in warning_set:
         if infer_default_canonical_dimension(column) is None:
